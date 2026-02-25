@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management Dashboard</title>
+    <script type='text/javascript' src='/requirejs/config.js'></script>
+    <script type='text/javascript' src='/module/js/com/tridium/js/ext/require/require.min.js'></script>
+
+    <style>
+        :root {
+            /* Light theme - Industrial minimal aesthetic */
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f7;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #6e6e73;
+            --accent-primary: #007aff;
+            --accent-secondary: #34c759;
+            --accent-warning: #ff9500;
+            --accent-error: #ff3b30;
+            --border-light: #d2d2d7;
+            --border-medium: #c6c6cc;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.1);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.15);
+            
+            /* User status colors */
+            --user-enabled: #34c759;
+            --user-disabled: #ff3b30;
+            --user-initials-bg: #e8f5e8;
+            --role-badge-bg: #e8c7de;
+        }
+
+        body.dark-mode {
+            /* Dark theme - Premium tech aesthetic */
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --text-tertiary: #8e8e93;
+            --accent-primary: #0a84ff;
+            --accent-secondary: #32d74b;
+            --accent-warning: #ff9f0a;
+            --accent-error: #ff453a;
+            --border-light: #38383a;
+            --border-medium: #48484a;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.3);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.4);
+            
+            /* User status colors - dark mode */
+            --user-enabled: #32d74b;
+            --user-disabled: #ff453a;
+            --user-initials-bg: #1e2e1e;
+            --role-badge-bg: #2e1e2e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Helvetica Neue", "Arial", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-light);
+            padding: 32px 40px;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            position: relative;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-family: "SF Mono", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+            font-size: 2.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.01em;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 32px;
+            right: 40px;
+            width: 64px;
+            height: 34px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 17px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+        }
+
+        .theme-toggle::before {
+            content: '';
+            width: 26px;
+            height: 26px;
+            background: var(--bg-secondary);
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        body.dark-mode .theme-toggle::before {
+            transform: translateX(30px);
+            content: '';
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 9px;
+            top: 9px;
+            width: 16px;
+            height: 16px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 1;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 0;
+        }
+        body.dark-mode .theme-toggle .icon-sun { opacity: 0; transform: translateX(30px); }
+        body.dark-mode .theme-toggle .icon-moon { opacity: 1; transform: translateX(30px); }
+
+
+        .nav-back {
+            position: absolute;
+            top: 32px;
+            left: 40px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 12px 20px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        .nav-back:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Main Container */
+        .main-container {
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* User Stats */
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-light);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--stat-color, var(--accent-primary));
+            opacity: 0.8;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .stat-value {
+            font-family: "SF Mono", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--stat-color, var(--accent-primary));
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .stat-card.enabled {
+            --stat-color: var(--user-enabled);
+        }
+
+        .stat-card.disabled {
+            --stat-color: var(--user-disabled);
+        }
+
+        .stat-card.admin {
+            --stat-color: var(--accent-warning);
+        }
+
+        /* Users Container */
+        .users-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+        }
+
+        .users-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .users-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .action-btn.add-user {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        .action-btn.add-user:hover {
+            background: #248a3d;
+        }
+
+        /* User Grid */
+        .user-grid {
+            padding: 32px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        /* User Card */
+        .user-card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-light);
+            border-radius: 16px;
+            padding: 24px;
+            display: grid;
+            grid-template-rows: 80px 60px 1fr auto;
+            gap: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--user-status-color);
+            opacity: 0.8;
+        }
+
+        .user-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-heavy);
+            border-color: var(--accent-primary);
+        }
+
+        .user-card.enabled {
+            --user-status-color: var(--user-enabled);
+            background: var(--bg-secondary);
+        }
+
+        .user-card.disabled {
+            --user-status-color: var(--user-disabled);
+            background: var(--bg-tertiary);
+            opacity: 0.7;
+        }
+
+        /* User Initials */
+        .user-initials {
+            width: 80px;
+            height: 80px;
+            background: var(--user-initials-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 auto;
+            border: 3px solid var(--user-status-color);
+        }
+
+        /* User Name */
+        .user-name {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .primary-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .secondary-name {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* User Roles */
+        .user-roles {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .role-badge {
+            background: var(--role-badge-bg);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid var(--border-light);
+        }
+
+        .role-badge.admin {
+            background: var(--accent-warning);
+            color: white;
+        }
+
+        .role-badge.operator {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        /* User Actions */
+        .user-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .user-action-btn {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+
+        .user-action-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .user-action-btn.danger:hover {
+            background: var(--accent-error);
+            color: white;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 24px 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .user-stats {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 16px;
+            }
+
+            .user-grid {
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 16px;
+                padding: 20px;
+            }
+
+            .nav-back,
+            .theme-toggle {
+                position: relative;
+                top: auto;
+                left: auto;
+                right: auto;
+                margin-bottom: 20px;
+            }
+        }
+
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="javascript:history.back()" class="nav-back">← Back</a>
+        <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+        <h1>User Management</h1>
+        <p>System users and role management</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- User Statistics -->
+        <div class="user-stats fade-in">
+            <div class="stat-card enabled">
+                <div class="stat-value" id="enabledCount">--</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+            <div class="stat-card disabled">
+                <div class="stat-value" id="disabledCount">--</div>
+                <div class="stat-label">Disabled Users</div>
+            </div>
+            <div class="stat-card admin">
+                <div class="stat-value" id="adminCount">--</div>
+                <div class="stat-label">Admin Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalCount">--</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+        </div>
+
+        <!-- Users Container -->
+        <div class="users-container slide-in">
+            <div class="users-header">
+                <h2 class="users-title">System Users</h2>
+                <div class="header-actions">
+                    <button class="action-btn" onclick="refreshUsers()"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg> Refresh</button>
+                    <button class="action-btn add-user" onclick="showAddUserDialog()">+ Add User</button>
+                </div>
+            </div>
+
+            <div class="users-content">
+                <div class="user-grid" id="userGrid">
+                    <!-- User cards will be populated here -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-state-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"/></svg></div>
+                    <h3>No Users Found</h3>
+                    <p>No users are currently configured in the system.<br>Click "Add User" to create the first user account.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading User Data...</div>
+    </div>
+
+    <script>
+        // Theme Management
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        const savedTheme = localStorage.getItem('ahr-dashboard-theme') || 'light';
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-mode');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const currentTheme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('ahr-dashboard-theme', currentTheme);
+        });
+
+        // Pre-load baja:User type into registry for user creation
+        require(['baja!', 'baja!baja:User'], function (baja) {
+            'use strict';
+
+            // Global user data storage
+            let userData = [];
+            let userStats = {
+                total: 0,
+                enabled: 0,
+                disabled: 0,
+                admin: 0
+            };
+
+            // Extract initials from name
+            function extractInitials(name) {
+                if (!name || name.trim() === '') return '??';
+                
+                return name.trim()
+                    .split(' ')
+                    .map(word => word.charAt(0))
+                    .join('')
+                    .toUpperCase()
+                    .substring(0, 2);
+            }
+
+            // Decode URL-encoded username
+            function decodeUsername(encodedUsername) {
+                return encodedUsername.replace(/\$(..)/g, (_, hexCode) => String.fromCharCode(parseInt(hexCode, 16)));
+            }
+
+            // Create user card HTML
+            function createUserCard(user) {
+                const username = user._actualName || baja.SlotPath.unescape(user.getName().trim());
+                const fullname = user.getFullName() ? user.getFullName().trim() : '';
+                const enabled = user.getEnabled();
+                
+                console.log('User ' + username + ': permissions="' + (user.$permissionsStr || '') + '", enabled=' + enabled);
+                
+                // Get roles using BQL data
+                let roles = [];
+                const rolesString = user._rolesString || user.getRoles() || '';
+                console.log('User ' + username + ' roles from BQL:', rolesString);
+                
+                if (rolesString && rolesString.trim() !== '') {
+                    roles = rolesString.split(',')
+                        .filter(r => r.trim() !== '')
+                        .map(r => r.trim());
+                } else {
+                    roles.push('user');
+                }
+                
+                console.log('User ' + username + ' final roles:', roles);
+                
+                const initials = extractInitials(fullname || username);
+                const displayName = fullname || username;
+                const secondaryName = fullname ? username : '';
+                
+                const cardClass = enabled ? 'enabled' : 'disabled';
+                
+                const roleButtons = roles.length > 0 ? 
+                    roles.map(role => 
+                        '<span class="role-badge ' + role.toLowerCase() + '">' + role + '</span>'
+                    ).join('') :
+                    '<span class="role-badge">user</span>';
+                
+                return '<div class="user-card ' + cardClass + '" onclick="viewUserDetails(\'' + username + '\')">' +
+                        '<div class="user-initials">' + initials + '</div>' +
+                        '<div class="user-name">' +
+                            '<p class="primary-name">' + displayName + '</p>' +
+                            (secondaryName ? '<p class="secondary-name">' + secondaryName + '</p>' : '') +
+                        '</div>' +
+                        '<div class="user-roles">' + roleButtons + '</div>' +
+                        '<div class="user-actions" onclick="event.stopPropagation();">' +
+                            '<button class="user-action-btn" onclick="editUser(\'' + username + '\')">Edit</button>' +
+                            '<button class="user-action-btn" onclick="toggleUserStatus(\'' + username + '\', ' + enabled + ')">' +
+                                (enabled ? 'Disable' : 'Enable') +
+                            '</button>' +
+                            '<button class="user-action-btn danger" onclick="deleteUser(\'' + username + '\')">Delete</button>' +
+                        '</div>' +
+                    '</div>';
+            }
+
+            // Update user statistics
+            function updateUserStats() {
+                userStats = {
+                    total: userData.length,
+                    enabled: userData.filter(u => u.getEnabled()).length,
+                    disabled: userData.filter(u => !u.getEnabled()).length,
+                    admin: userData.filter(u => {
+                        const rolesString = u._rolesString || u.getRoles() || '';
+                        const username = u._actualName || baja.SlotPath.unescape(u.getName().trim());
+                        
+                        let isAdmin = false;
+                        
+                        if (rolesString && rolesString.trim() !== '') {
+                            const roles = rolesString.split(',').map(r => r.trim().toLowerCase());
+                            isAdmin = roles.some(role => role.includes('admin'));
+                        }
+                        
+                        console.log('Admin check for ' + username + ': roles="' + rolesString + '", isAdmin=' + isAdmin);
+                        return isAdmin;
+                    }).length
+                };
+
+                console.log('Updated user stats:', userStats);
+
+                document.getElementById('totalCount').textContent = userStats.total;
+                document.getElementById('enabledCount').textContent = userStats.enabled;
+                document.getElementById('disabledCount').textContent = userStats.disabled;
+                document.getElementById('adminCount').textContent = userStats.admin;
+            }
+
+            // Render user grid
+            function renderUserGrid() {
+                const userGrid = document.getElementById('userGrid');
+                const emptyState = document.getElementById('emptyState');
+                
+                if (userData.length === 0) {
+                    userGrid.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                
+                emptyState.style.display = 'none';
+                userGrid.innerHTML = userData.map(user => createUserCard(user)).join('');
+            }
+
+            // Load user data using BQL query
+            function loadUserData() {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.display = 'flex';
+                
+                console.log('Loading user data with BQL...');
+                
+                // Clear existing data
+                userData = [];
+                userStats = { total: 0, enabled: 0, disabled: 0, admin: 0 };
+                updateUserStats();
+                renderUserGrid();
+                
+                // BQL query — baja is already in scope, no nested require needed
+                baja.Ord.make('station:|slot:/|bql:select name, roles, enabled from baja:User')
+                    .get({
+                        cursor: {
+                            limit: 500,
+                            each: function () {
+                                const encodedUsername = this.get('name');
+                                const username = decodeUsername(encodedUsername);
+                                const rolesStr = this.get('roles') || '';
+                                const enabled = this.get('enabled');
+                                
+                                // Skip prototype users
+                                if (!username || username.trim() === '' || username.toLowerCase().includes('prototype')) {
+                                    return;
+                                }
+                                
+                                console.log('BQL User: ' + username + ', roles: "' + rolesStr + '", enabled: ' + enabled);
+                                
+                                // Create user object with BQL data
+                                userData.push({
+                                    getName: () => baja.SlotPath.escape(username),
+                                    getFullName: () => '',
+                                    getEnabled: () => enabled,
+                                    getRoles: () => rolesStr,
+                                    _actualName: username,
+                                    _rolesString: rolesStr
+                                });
+                            }
+                        }
+                    })
+                    .then(() => {
+                        console.log('Loaded ' + userData.length + ' users via BQL');
+                        updateUserStats();
+                        renderUserGrid();
+                        loadingOverlay.style.display = 'none';
+                    })
+                    .catch(error => {
+                        console.error('Error loading user data with BQL:', error);
+                        console.log('Falling back to original user loading method...');
+                        
+                        // Fallback: load directly from UserService
+                        baja.Ord.make('station:|slot:/Services/UserService')
+                            .get()
+                            .then(userService => {
+                                const users = userService.getSlots().properties().is('baja:User').toValueArray();
+                                console.log('Fallback: Found ' + users.length + ' users');
+                                userData = users;
+                                updateUserStats();
+                                renderUserGrid();
+                                loadingOverlay.style.display = 'none';
+                            })
+                            .catch(fallbackError => {
+                                console.error('Fallback user loading also failed:', fallbackError);
+                                loadingOverlay.style.display = 'none';
+                                updateUserStats();
+                                renderUserGrid();
+                            });
+                    });
+            }
+
+            // View user details (hyperlink to property sheet)
+            function viewUserDetails(username) {
+                const escapedUsername = baja.SlotPath.escape(username);
+                const userOrd = 'station:|slot:/Services/UserService/' + escapedUsername;
+                console.log('Viewing user details for:', username, 'ORD:', userOrd);
+                
+                const multiSheetUrl = '/ord/' + encodeURIComponent(userOrd) + '|view:webEditors:MultiSheet';
+                console.log('Navigating to MultiSheet URL:', multiSheetUrl);
+                
+                window.location.href = multiSheetUrl;
+            }
+
+            // Edit user (navigate to property sheet)
+            function editUser(username) {
+                console.log('Editing user:', username);
+                viewUserDetails(username);
+            }
+
+            // Toggle user enabled status
+            function toggleUserStatus(username, currentEnabled) {
+                console.log((currentEnabled ? 'Disabling' : 'Enabling') + ' user:', username);
+                
+                const userOrd = 'station:|slot:/Services/UserService/' + baja.SlotPath.escape(username);
+                
+                baja.Ord.make(userOrd)
+                    .get()
+                    .then(user => {
+                        user.setEnabled(!currentEnabled);
+                        return user.save();
+                    })
+                    .then(() => {
+                        console.log('User ' + username + ' ' + (!currentEnabled ? 'enabled' : 'disabled') + ' successfully');
+                        loadUserData();
+                    })
+                    .catch(error => {
+                        console.error('Error toggling user status:', error);
+                        alert('Failed to update user status. Check console for errors.');
+                    });
+            }
+
+            // Delete user
+            function deleteUser(username) {
+                if (!confirm('Are you sure you want to delete user "' + username + '"? This action cannot be undone.')) {
+                    return;
+                }
+                
+                console.log('Deleting user:', username);
+                
+                baja.Ord.make('station:|slot:/Services/UserService')
+                    .get()
+                    .then(userService => {
+                        return userService.remove(baja.SlotPath.escape(username));
+                    })
+                    .then(() => {
+                        console.log('User ' + username + ' deleted successfully');
+                        loadUserData();
+                    })
+                    .catch(error => {
+                        console.error('Error deleting user:', error);
+                        alert('Failed to delete user. Check console for errors.');
+                    });
+            }
+
+            // Add new user — baja:User type is pre-loaded via require
+            function showAddUserDialog() {
+                const username = prompt('Enter username for new user:');
+                if (!username || username.trim() === '') return;
+                
+                const trimmedUsername = username.trim();
+                console.log('Creating user with username:', trimmedUsername);
+                
+                try {
+                    // Create user object — works because baja:User was pre-loaded in require
+                    const newUser = baja.$('baja:User');
+                    console.log('Created user object:', newUser);
+                    
+                    baja.Ord.make('station:|slot:/Services/UserService')
+                        .get()
+                        .then(userService => {
+                            // Check if user already exists
+                            const escapedUsername = baja.SlotPath.escape(trimmedUsername);
+                            if (userService.get(escapedUsername)) {
+                                alert('User "' + trimmedUsername + '" already exists!');
+                                return;
+                            }
+                            
+                            console.log('Adding user with slot name:', escapedUsername);
+                            return userService.add({ slot: escapedUsername, value: newUser });
+                        })
+                        .then(result => {
+                            if (result) {
+                                console.log('User added to UserService:', result);
+                                alert('User "' + trimmedUsername + '" created successfully! Opening configuration...');
+                                
+                                // Refresh then open the new user in MultiSheet
+                                loadUserData();
+                                setTimeout(() => viewUserDetails(trimmedUsername), 1500);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error adding user to UserService:', error);
+                            alert('Error creating user: ' + error.message);
+                        });
+                        
+                } catch (error) {
+                    console.error('Error creating user object:', error);
+                    alert('Error creating user: ' + error.message);
+                }
+            }
+
+            // Expose functions to global scope for onclick handlers
+            window.refreshUsers = loadUserData;
+            window.viewUserDetails = viewUserDetails;
+            window.editUser = editUser;
+            window.toggleUserStatus = toggleUserStatus;
+            window.deleteUser = deleteUser;
+            window.showAddUserDialog = showAddUserDialog;
+
+            // Initialize
+            function initializeDashboard() {
+                console.log('Initializing User Management Dashboard...');
+                loadUserData();
+                
+                // Auto-refresh every 60 seconds
+                setInterval(loadUserData, 60000);
+            }
+
+            initializeDashboard();
+        });
+    </script>
+</body>
+</html>

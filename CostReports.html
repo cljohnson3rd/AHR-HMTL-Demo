@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Reports - Building Control System</title>
+    <script type='text/javascript' src='/requirejs/config.js'></script>
+    <script type='text/javascript' src='/module/js/com/tridium/js/ext/require/require.min.js'></script>
+
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --bg-quaternary: #222222;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-tertiary: #808080;
+            --accent-electric: #00ff88;
+            --accent-cost: #00e5a0;
+            --accent-demand: #ff6b6b;
+            --accent-energy: #4ecdc4;
+            --accent-savings: #45b7d1;
+            --accent-warning: #ffd93d;
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --shadow-glow: 0 0 40px rgba(0, 255, 136, 0.15);
+            --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --gradient-cost: linear-gradient(135deg, #00ff88, #00cc6a);
+            --gradient-demand: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            --gradient-energy: linear-gradient(135deg, #4ecdc4, #3dbdb5);
+            --gradient-savings: linear-gradient(135deg, #45b7d1, #359ab5);
+        }
+
+        body.light-mode {
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f5;
+            --bg-quaternary: #eeeeee;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --text-tertiary: #888888;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --shadow-glow: 0 0 40px rgba(0, 255, 136, 0.1);
+            --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Helvetica Neue", "Arial", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Animated Background Grid */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-grid svg { width: 100%; height: 100%; }
+        .grid-line {
+            stroke: var(--accent-electric);
+            stroke-width: 0.5;
+            opacity: 0.3;
+            animation: energyPulse 4s ease-in-out infinite;
+        }
+        @keyframes energyPulse {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Layout */
+        .dashboard-container {
+            position: relative;
+            z-index: 1;
+            padding: 40px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+            position: relative;
+        }
+        .header h1 {
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: var(--gradient-cost);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0; right: 0;
+            width: 60px; height: 32px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            backdrop-filter: blur(10px);
+        }
+        .theme-toggle::before {
+            content: '';
+            width: 24px; height: 24px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-heavy);
+        }
+        body.light-mode .theme-toggle::before {
+            transform: translateX(28px);
+            content: '';
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 9px;
+            top: 9px;
+            width: 14px;
+            height: 14px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 0;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 1;
+        }
+        body.light-mode .theme-toggle .icon-sun { opacity: 1; transform: translateX(28px); }
+        body.light-mode .theme-toggle .icon-moon { opacity: 0; transform: translateX(28px); }
+
+
+        .nav-back {
+            position: absolute;
+            top: 0; left: 0;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 20px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-heavy);
+        }
+        .nav-back:hover {
+            background: var(--accent-electric);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+
+        /* Billing Period Selector */
+        .period-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        .period-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 24px;
+            color: var(--text-primary);
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .period-btn:hover, .period-btn.active {
+            background: var(--accent-electric);
+            color: var(--bg-primary);
+            border-color: var(--accent-electric);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+        .period-label {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-electric);
+            padding: 10px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            min-width: 220px;
+            text-align: center;
+        }
+
+        /* KPI Cards Row */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 28px;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-heavy);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .kpi-card:hover::before { opacity: 1; }
+        .kpi-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-glow), var(--shadow-heavy);
+        }
+
+        .kpi-card.total-cost::before { background: var(--gradient-cost); }
+        .kpi-card.demand-cost::before { background: var(--gradient-demand); }
+        .kpi-card.energy-cost::before { background: var(--gradient-energy); }
+        .kpi-card.peak-demand::before { background: var(--gradient-savings); }
+
+        .kpi-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .kpi-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .kpi-card.total-cost .kpi-icon { background: var(--gradient-cost); }
+        .kpi-card.demand-cost .kpi-icon { background: var(--gradient-demand); }
+        .kpi-card.energy-cost .kpi-icon { background: var(--gradient-energy); }
+        .kpi-card.peak-demand .kpi-icon { background: var(--gradient-savings); }
+
+        .kpi-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .kpi-value {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+            font-size: 2.4rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.1;
+        }
+        .kpi-card.total-cost .kpi-value {
+            background: var(--gradient-cost);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .kpi-card.demand-cost .kpi-value {
+            background: var(--gradient-demand);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .kpi-card.energy-cost .kpi-value {
+            background: var(--gradient-energy);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .kpi-card.peak-demand .kpi-value {
+            background: var(--gradient-savings);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .kpi-sub {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Chart Cards */
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+
+        .chart-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-heavy);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .chart-card:hover {
+            box-shadow: var(--shadow-glow), var(--shadow-heavy);
+        }
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .chart-title-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            background: var(--gradient-cost);
+        }
+        .chart-container {
+            width: 100%;
+            position: relative;
+        }
+        .chart-container svg {
+            width: 100%;
+            overflow: visible;
+        }
+
+        /* d3 chart styling */
+        .axis text {
+            fill: var(--text-tertiary);
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+            font-size: 11px;
+        }
+        .axis line, .axis path {
+            stroke: var(--glass-border);
+        }
+        .grid-lines line {
+            stroke: var(--glass-border);
+            stroke-dasharray: 3, 3;
+            opacity: 0.5;
+        }
+        .tooltip-box {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            box-shadow: var(--shadow-heavy);
+            z-index: 10;
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+        .tooltip-box.visible { opacity: 1; }
+
+        /* Rate Info Panel */
+        .rate-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-heavy);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+        .rate-item {
+            text-align: center;
+            padding: 20px;
+            border-radius: 16px;
+            background: var(--bg-tertiary);
+            transition: all 0.3s ease;
+        }
+        .rate-item:hover {
+            background: var(--bg-quaternary);
+            transform: translateY(-2px);
+        }
+        .rate-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .rate-value {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--accent-electric);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+        }
+        .status-bar .live-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            background: var(--accent-electric);
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 2s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Loading */
+        .loading { opacity: 0.6; animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .chart-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .dashboard-container { padding: 20px; }
+            .header h1 { font-size: 2.2rem; }
+            .kpi-grid { grid-template-columns: 1fr; gap: 16px; }
+            .kpi-value { font-size: 1.8rem; }
+            .chart-row { gap: 20px; }
+            .period-selector { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Grid -->
+    <div class="bg-grid">
+        <svg>
+            <defs>
+                <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                    <path d="M 50 0 L 0 0 0 50" fill="none" class="grid-line" />
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <a href="javascript:history.back()" class="nav-back">← Back</a>
+            <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+            <h1>Cost Reports</h1>
+            <p>Billing cycle analysis and energy cost tracking</p>
+        </div>
+
+        <!-- Billing Period Selector -->
+        <div class="period-selector">
+            <button class="period-btn" id="prevPeriod"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"/></svg></button>
+            <div class="period-label" id="periodLabel">--</div>
+            <button class="period-btn" id="nextPeriod"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/></svg></button>
+            <button class="period-btn active" id="currentPeriod">Current Cycle</button>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card total-cost loading">
+                <div class="kpi-header">
+                    <div class="kpi-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M7,15H9C9,16.08 10.37,17 12,17C13.63,17 15,16.08 15,15C15,13.9 13.96,13.5 11.76,12.97C9.64,12.44 7,11.78 7,9C7,7.21 8.47,5.69 10.5,5.18V3H13.5V5.18C15.53,5.69 17,7.21 17,9H15C15,7.92 13.63,7 12,7C10.37,7 9,7.92 9,9C9,10.1 10.04,10.5 12.24,11.03C14.36,11.56 17,12.22 17,15C17,16.79 15.53,18.31 13.5,18.82V21H10.5V18.82C8.47,18.31 7,16.79 7,15Z"/></svg></div>
+                    <div class="kpi-title">Total Estimated Cost</div>
+                </div>
+                <div class="kpi-value" id="totalCost">--</div>
+                <div class="kpi-sub" id="totalCostSub">Billing cycle to date</div>
+            </div>
+            <div class="kpi-card demand-cost loading">
+                <div class="kpi-header">
+                    <div class="kpi-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M7,2V13H10V22L17,10H13L17,2H7Z"/></svg></div>
+                    <div class="kpi-title">Demand Charge</div>
+                </div>
+                <div class="kpi-value" id="demandCost">--</div>
+                <div class="kpi-sub" id="demandCostSub">Peak demand × rate</div>
+            </div>
+            <div class="kpi-card energy-cost loading">
+                <div class="kpi-header">
+                    <div class="kpi-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div>
+                    <div class="kpi-title">Energy Charge</div>
+                </div>
+                <div class="kpi-value" id="energyCost">--</div>
+                <div class="kpi-sub" id="energyCostSub">Usage × rate</div>
+            </div>
+            <div class="kpi-card peak-demand loading">
+                <div class="kpi-header">
+                    <div class="kpi-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z"/></svg></div>
+                    <div class="kpi-title">Peak Demand</div>
+                </div>
+                <div class="kpi-value" id="peakDemand">--</div>
+                <div class="kpi-sub" id="peakDemandSub">15-min peak this cycle</div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1: Daily Cost + Demand Profile -->
+        <div class="chart-row">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-title-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H18V1M17,12H12V17H17V12Z"/></svg></div>
+                        Daily Cost Breakdown
+                    </div>
+                </div>
+                <div class="chart-container" id="dailyCostChart" style="height: 320px;">
+                    <div class="tooltip-box" id="dailyCostTooltip"></div>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-title-icon" style="background: var(--gradient-demand);"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M7,2V13H10V22L17,10H13L17,2H7Z"/></svg></div>
+                        Demand Profile
+                    </div>
+                </div>
+                <div class="chart-container" id="demandProfileChart" style="height: 320px;">
+                    <div class="tooltip-box" id="demandTooltip"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2: Cumulative Cost full width -->
+        <div class="chart-row">
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-title-icon" style="background: var(--gradient-energy);"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z"/></svg></div>
+                        Cumulative Cost — Billing Cycle
+                    </div>
+                </div>
+                <div class="chart-container" id="cumulativeCostChart" style="height: 300px;">
+                    <div class="tooltip-box" id="cumulativeTooltip"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rate Info Panel -->
+        <div class="rate-panel">
+            <div class="rate-item">
+                <div class="rate-label">Electric Rate</div>
+                <div class="rate-value" id="rateElectric">--</div>
+            </div>
+            <div class="rate-item">
+                <div class="rate-label">Demand Rate</div>
+                <div class="rate-value" id="rateDemand">--</div>
+            </div>
+            <div class="rate-item">
+                <div class="rate-label">Billing Cycle Start</div>
+                <div class="rate-value" id="rateCycleStart">--</div>
+            </div>
+            <div class="rate-item">
+                <div class="rate-label">Days in Cycle</div>
+                <div class="rate-value" id="rateDaysInCycle">--</div>
+            </div>
+            <div class="rate-item">
+                <div class="rate-label">Avg $/Day</div>
+                <div class="rate-value" id="rateAvgDay">--</div>
+            </div>
+            <div class="rate-item">
+                <div class="rate-label">Last Updated</div>
+                <div class="rate-value" id="rateLastUpdate">--</div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar" id="statusBar">
+            <span class="live-dot"></span>
+            <span id="statusText">Initializing...</span>
+        </div>
+    </div>
+
+    <script>
+        // Theme Management
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light-mode') body.classList.add('light-mode');
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+            localStorage.setItem('theme', body.classList.contains('light-mode') ? 'light-mode' : 'dark-mode');
+        });
+
+        require(['baja!', 'd3'], function(baja, d3) {
+            'use strict';
+
+            // ── Configuration ─────────────────────────────────────────
+            const config = {
+                points: {
+                    demand:     'station:|slot:/PowerMeter/Demand',
+                    usage:      'station:|slot:/PowerMeter/Usage'
+                },
+                costConfig: {
+                    electricRate:     'station:|slot:/PowerMeter/CostConfig/ElectricRate',
+                    demandRate:       'station:|slot:/PowerMeter/CostConfig/DemandRate',
+                    billingCycleStart:'station:|slot:/PowerMeter/CostConfig/BillingCycleStart'
+                }
+            };
+
+            // ── State ─────────────────────────────────────────────────
+            let electricRate = 0.10;       // $/kWh default
+            let demandRate = 12.00;        // $/kW default
+            let billingCycleStart = 1;     // Day of month
+            let currentPeriodOffset = 0;   // 0 = current, -1 = last month, etc.
+
+            let demandHistory = [];        // { timestamp, value }
+            let usageHistory = [];         // { timestamp, value }
+
+            let demandHistoryOrd = null;
+            let usageHistoryOrd = null;
+
+            const subscriber = new baja.Subscriber();
+
+            // ── Utility Functions ─────────────────────────────────────
+            function getBillingPeriod(offset) {
+                const now = new Date();
+                let year = now.getFullYear();
+                let month = now.getMonth() + offset;
+
+                // Normalize month/year
+                while (month < 0) { month += 12; year--; }
+                while (month > 11) { month -= 12; year++; }
+
+                const start = new Date(year, month, billingCycleStart, 0, 0, 0);
+                
+                // End is one month later
+                let endMonth = month + 1;
+                let endYear = year;
+                if (endMonth > 11) { endMonth = 0; endYear++; }
+                const end = new Date(endYear, endMonth, billingCycleStart, 0, 0, 0);
+
+                return { start, end };
+            }
+
+            function formatCurrency(val) {
+                if (val == null || isNaN(val)) return '--';
+                return '$' + val.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+
+            function formatDate(d) {
+                return (d.getMonth() + 1) + '/' + d.getDate();
+            }
+
+            function formatDateFull(d) {
+                const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                                'Jul','Aug','Sep','Oct','Nov','Dec'];
+                return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+            }
+
+            function updatePeriodLabel() {
+                const period = getBillingPeriod(currentPeriodOffset);
+                const label = formatDateFull(period.start) + '  →  ' + formatDateFull(period.end);
+                document.getElementById('periodLabel').textContent = label;
+                
+                // Highlight current button
+                document.getElementById('currentPeriod').classList.toggle(
+                    'active', currentPeriodOffset === 0
+                );
+            }
+
+            function setStatus(text) {
+                document.getElementById('statusText').textContent = text;
+            }
+
+            // ── KPI Calculations ──────────────────────────────────────
+            function calculateAndRender() {
+                const period = getBillingPeriod(currentPeriodOffset);
+                const now = new Date();
+                const periodEnd = period.end < now ? period.end : now;
+
+                // Filter histories to billing period
+                const periodDemand = demandHistory.filter(
+                    d => d.timestamp >= period.start && d.timestamp < periodEnd
+                );
+                const periodUsage = usageHistory.filter(
+                    d => d.timestamp >= period.start && d.timestamp < periodEnd
+                );
+
+                // Peak demand in period (max 15-min reading)
+                let peakDemandVal = 0;
+                let peakDemandTime = null;
+                periodDemand.forEach(d => {
+                    if (d.value > peakDemandVal) {
+                        peakDemandVal = d.value;
+                        peakDemandTime = d.timestamp;
+                    }
+                });
+
+                // Total usage in period — sum 15-min kWh intervals
+                // Each 15-min reading of kW → kWh = kW × 0.25
+                let totalUsageKwh = 0;
+                periodUsage.forEach(d => {
+                    totalUsageKwh += d.value;
+                });
+                // If usage point is cumulative kWh, take max - min instead
+                // Adjust this logic based on your meter type:
+                if (periodUsage.length > 1) {
+                    const usageVals = periodUsage.map(d => d.value);
+                    const maxUsage = Math.max(...usageVals);
+                    const minUsage = Math.min(...usageVals);
+                    // If values are monotonically increasing, it's a cumulative meter
+                    if (maxUsage - minUsage > 0 && usageVals[usageVals.length - 1] >= usageVals[0]) {
+                        totalUsageKwh = maxUsage - minUsage;
+                    }
+                }
+
+                // Cost calculations
+                const energyCharge = totalUsageKwh * electricRate;
+                const demandCharge = peakDemandVal * demandRate;
+                const totalCost = energyCharge + demandCharge;
+
+                // Days elapsed
+                const msPerDay = 86400000;
+                const daysElapsed = Math.max(1, Math.ceil((periodEnd - period.start) / msPerDay));
+                const avgPerDay = totalCost / daysElapsed;
+
+                // ── Update KPI Cards ──────────────────────────────────
+                document.getElementById('totalCost').textContent = formatCurrency(totalCost);
+                document.getElementById('totalCostSub').textContent =
+                    daysElapsed + ' days into billing cycle';
+
+                document.getElementById('demandCost').textContent = formatCurrency(demandCharge);
+                document.getElementById('demandCostSub').textContent =
+                    peakDemandVal.toFixed(1) + ' kW × $' + demandRate.toFixed(2) + '/kW';
+
+                document.getElementById('energyCost').textContent = formatCurrency(energyCharge);
+                document.getElementById('energyCostSub').textContent =
+                    totalUsageKwh.toLocaleString('en-US', { maximumFractionDigits: 0 }) +
+                    ' kWh × $' + electricRate.toFixed(4) + '/kWh';
+
+                document.getElementById('peakDemand').textContent =
+                    peakDemandVal.toFixed(1) + ' kW';
+                document.getElementById('peakDemandSub').textContent = peakDemandTime
+                    ? 'Peak at ' + peakDemandTime.toLocaleString()
+                    : 'No data yet';
+
+                // ── Update Rate Panel ─────────────────────────────────
+                document.getElementById('rateElectric').textContent =
+                    '$' + electricRate.toFixed(4) + '/kWh';
+                document.getElementById('rateDemand').textContent =
+                    '$' + demandRate.toFixed(2) + '/kW';
+                document.getElementById('rateCycleStart').textContent =
+                    'Day ' + billingCycleStart;
+                document.getElementById('rateDaysInCycle').textContent =
+                    daysElapsed + ' / ~30';
+                document.getElementById('rateAvgDay').textContent =
+                    formatCurrency(avgPerDay);
+                document.getElementById('rateLastUpdate').textContent =
+                    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                // ── Remove Loading State ──────────────────────────────
+                document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('loading'));
+
+                // ── Render Charts ─────────────────────────────────────
+                renderDailyCostChart(periodUsage, periodDemand, period, periodEnd);
+                renderDemandProfileChart(periodDemand, peakDemandVal, peakDemandTime);
+                renderCumulativeCostChart(periodUsage, period, periodEnd);
+            }
+
+            // ── Daily Cost Bar Chart ──────────────────────────────────
+            function renderDailyCostChart(usageData, demandData, period, periodEnd) {
+                const container = document.getElementById('dailyCostChart');
+                const tooltip = document.getElementById('dailyCostTooltip');
+                d3.select(container).selectAll('svg').remove();
+
+                const rect = container.getBoundingClientRect();
+                const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+                const width = rect.width - margin.left - margin.right;
+                const height = 280 - margin.top - margin.bottom;
+
+                const svg = d3.select(container).append('svg')
+                    .attr('width', rect.width)
+                    .attr('height', 280);
+                const g = svg.append('g')
+                    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+                // Bucket usage into daily totals
+                const dailyMap = {};
+                const msPerDay = 86400000;
+                const days = Math.ceil((periodEnd - period.start) / msPerDay);
+
+                for (let i = 0; i < days; i++) {
+                    const dayStart = new Date(period.start.getTime() + i * msPerDay);
+                    const key = formatDate(dayStart);
+                    dailyMap[key] = { date: dayStart, label: key, kwh: 0 };
+                }
+
+                usageData.forEach(d => {
+                    const key = formatDate(d.timestamp);
+                    if (dailyMap[key]) dailyMap[key].kwh += d.value * 0.25;
+                });
+
+                const dailyData = Object.values(dailyMap).sort((a, b) => a.date - b.date);
+                dailyData.forEach(d => { d.cost = d.kwh * electricRate; });
+
+                if (dailyData.length === 0) {
+                    g.append('text')
+                        .attr('x', width / 2).attr('y', height / 2)
+                        .attr('text-anchor', 'middle')
+                        .style('fill', 'var(--text-tertiary)')
+                        .style('font-size', '14px')
+                        .text('Awaiting history data...');
+                    return;
+                }
+
+                const x = d3.scaleBand()
+                    .domain(dailyData.map(d => d.label))
+                    .range([0, width])
+                    .padding(0.3);
+
+                const maxCost = d3.max(dailyData, d => d.cost) || 10;
+                const y = d3.scaleLinear()
+                    .domain([0, maxCost * 1.15])
+                    .range([height, 0]);
+
+                // Grid lines
+                g.append('g').attr('class', 'grid-lines')
+                    .selectAll('line')
+                    .data(y.ticks(5))
+                    .enter().append('line')
+                    .attr('x1', 0).attr('x2', width)
+                    .attr('y1', d => y(d)).attr('y2', d => y(d));
+
+                // X axis
+                g.append('g').attr('class', 'axis')
+                    .attr('transform', `translate(0,${height})`)
+                    .call(d3.axisBottom(x).tickSize(0))
+                    .selectAll('text')
+                    .style('text-anchor', 'end')
+                    .attr('dx', '-0.5em').attr('dy', '0.5em')
+                    .attr('transform', 'rotate(-35)');
+
+                // Y axis
+                g.append('g').attr('class', 'axis')
+                    .call(d3.axisLeft(y).ticks(5).tickFormat(d => '$' + d.toFixed(0)));
+
+                // Gradient
+                const defs = svg.append('defs');
+                const grad = defs.append('linearGradient')
+                    .attr('id', 'barGrad').attr('x1', 0).attr('y1', 0)
+                    .attr('x2', 0).attr('y2', 1);
+                grad.append('stop').attr('offset', '0%')
+                    .attr('stop-color', '#00ff88').attr('stop-opacity', 1);
+                grad.append('stop').attr('offset', '100%')
+                    .attr('stop-color', '#00cc6a').attr('stop-opacity', 0.6);
+
+                // Bars
+                g.selectAll('.bar')
+                    .data(dailyData)
+                    .enter().append('rect')
+                    .attr('class', 'bar')
+                    .attr('x', d => x(d.label))
+                    .attr('width', x.bandwidth())
+                    .attr('y', height)
+                    .attr('height', 0)
+                    .attr('fill', 'url(#barGrad)')
+                    .attr('rx', 4)
+                    .on('mouseenter', function(event, d) {
+                        d3.select(this).attr('fill', '#00ff88');
+                        tooltip.innerHTML = '<strong>' + d.label + '</strong><br>' +
+                            d.kwh.toFixed(1) + ' kWh<br>' + formatCurrency(d.cost);
+                        tooltip.classList.add('visible');
+                    })
+                    .on('mousemove', function(event) {
+                        const bounds = container.getBoundingClientRect();
+                        tooltip.style.left = (event.clientX - bounds.left + 12) + 'px';
+                        tooltip.style.top = (event.clientY - bounds.top - 40) + 'px';
+                    })
+                    .on('mouseleave', function() {
+                        d3.select(this).attr('fill', 'url(#barGrad)');
+                        tooltip.classList.remove('visible');
+                    })
+                    .transition().duration(800).delay((d, i) => i * 40)
+                    .attr('y', d => y(d.cost))
+                    .attr('height', d => height - y(d.cost));
+            }
+
+            // ── Demand Profile Area Chart ─────────────────────────────
+            function renderDemandProfileChart(demandData, peakVal, peakTime) {
+                const container = document.getElementById('demandProfileChart');
+                const tooltip = document.getElementById('demandTooltip');
+                d3.select(container).selectAll('svg').remove();
+
+                const rect = container.getBoundingClientRect();
+                const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+                const width = rect.width - margin.left - margin.right;
+                const height = 280 - margin.top - margin.bottom;
+
+                const svg = d3.select(container).append('svg')
+                    .attr('width', rect.width)
+                    .attr('height', 280);
+                const g = svg.append('g')
+                    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+                if (demandData.length === 0) {
+                    g.append('text')
+                        .attr('x', width / 2).attr('y', height / 2)
+                        .attr('text-anchor', 'middle')
+                        .style('fill', 'var(--text-tertiary)')
+                        .style('font-size', '14px')
+                        .text('Awaiting history data...');
+                    return;
+                }
+
+                const sortedData = [...demandData].sort((a, b) => a.timestamp - b.timestamp);
+
+                const x = d3.scaleTime()
+                    .domain(d3.extent(sortedData, d => d.timestamp))
+                    .range([0, width]);
+
+                const maxDemand = d3.max(sortedData, d => d.value) || 100;
+                const y = d3.scaleLinear()
+                    .domain([0, maxDemand * 1.2])
+                    .range([height, 0]);
+
+                // Grid
+                g.append('g').attr('class', 'grid-lines')
+                    .selectAll('line')
+                    .data(y.ticks(5))
+                    .enter().append('line')
+                    .attr('x1', 0).attr('x2', width)
+                    .attr('y1', d => y(d)).attr('y2', d => y(d));
+
+                // Axes
+                g.append('g').attr('class', 'axis')
+                    .attr('transform', `translate(0,${height})`)
+                    .call(d3.axisBottom(x).ticks(6).tickFormat(d3.timeFormat('%m/%d')));
+
+                g.append('g').attr('class', 'axis')
+                    .call(d3.axisLeft(y).ticks(5).tickFormat(d => d + ' kW'));
+
+                // Gradient fill
+                const defs = svg.append('defs');
+                const areaGrad = defs.append('linearGradient')
+                    .attr('id', 'demandAreaGrad')
+                    .attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
+                areaGrad.append('stop').attr('offset', '0%')
+                    .attr('stop-color', '#ff6b6b').attr('stop-opacity', 0.5);
+                areaGrad.append('stop').attr('offset', '100%')
+                    .attr('stop-color', '#ff6b6b').attr('stop-opacity', 0.05);
+
+                // Area
+                const area = d3.area()
+                    .x(d => x(d.timestamp))
+                    .y0(height)
+                    .y1(d => y(d.value))
+                    .curve(d3.curveMonotoneX);
+
+                g.append('path')
+                    .datum(sortedData)
+                    .attr('fill', 'url(#demandAreaGrad)')
+                    .attr('d', area);
+
+                // Line
+                const line = d3.line()
+                    .x(d => x(d.timestamp))
+                    .y(d => y(d.value))
+                    .curve(d3.curveMonotoneX);
+
+                g.append('path')
+                    .datum(sortedData)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#ff6b6b')
+                    .attr('stroke-width', 2)
+                    .attr('d', line);
+
+                // Peak marker
+                if (peakTime) {
+                    g.append('circle')
+                        .attr('cx', x(peakTime))
+                        .attr('cy', y(peakVal))
+                        .attr('r', 6)
+                        .attr('fill', '#ff6b6b')
+                        .attr('stroke', '#fff')
+                        .attr('stroke-width', 2)
+                        .style('filter', 'drop-shadow(0 0 8px rgba(255, 107, 107, 0.8))');
+
+                    // Peak label
+                    g.append('text')
+                        .attr('x', x(peakTime))
+                        .attr('y', y(peakVal) - 14)
+                        .attr('text-anchor', 'middle')
+                        .style('fill', '#ff6b6b')
+                        .style('font-family', 'SF Mono, Consolas, Roboto Mono, Liberation Mono, Menlo, Monaco, monospace')
+                        .style('font-size', '11px')
+                        .style('font-weight', '600')
+                        .text('PEAK ' + peakVal.toFixed(1) + ' kW');
+                }
+
+                // Hover overlay
+                const hoverLine = g.append('line')
+                    .attr('stroke', 'var(--text-tertiary)')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '4,4')
+                    .style('opacity', 0);
+
+                const hoverDot = g.append('circle')
+                    .attr('r', 4)
+                    .attr('fill', '#ff6b6b')
+                    .style('opacity', 0);
+
+                g.append('rect')
+                    .attr('width', width).attr('height', height)
+                    .attr('fill', 'transparent')
+                    .on('mousemove', function(event) {
+                        const [mx] = d3.pointer(event);
+                        const xDate = x.invert(mx);
+                        const bisect = d3.bisector(d => d.timestamp).left;
+                        const idx = bisect(sortedData, xDate, 1);
+                        const d = sortedData[Math.min(idx, sortedData.length - 1)];
+                        if (!d) return;
+
+                        hoverLine
+                            .attr('x1', x(d.timestamp)).attr('x2', x(d.timestamp))
+                            .attr('y1', 0).attr('y2', height)
+                            .style('opacity', 0.5);
+                        hoverDot
+                            .attr('cx', x(d.timestamp)).attr('cy', y(d.value))
+                            .style('opacity', 1);
+
+                        const bounds = container.getBoundingClientRect();
+                        tooltip.innerHTML = d.timestamp.toLocaleString() + '<br><strong>' +
+                            d.value.toFixed(1) + ' kW</strong><br>' +
+                            formatCurrency(d.value * demandRate) + ' demand charge';
+                        tooltip.classList.add('visible');
+                        tooltip.style.left = (event.clientX - bounds.left + 12) + 'px';
+                        tooltip.style.top = (event.clientY - bounds.top - 50) + 'px';
+                    })
+                    .on('mouseleave', function() {
+                        hoverLine.style('opacity', 0);
+                        hoverDot.style('opacity', 0);
+                        tooltip.classList.remove('visible');
+                    });
+            }
+
+            // ── Cumulative Cost Line Chart ────────────────────────────
+            function renderCumulativeCostChart(usageData, period, periodEnd) {
+                const container = document.getElementById('cumulativeCostChart');
+                const tooltip = document.getElementById('cumulativeTooltip');
+                d3.select(container).selectAll('svg').remove();
+
+                const rect = container.getBoundingClientRect();
+                const margin = { top: 20, right: 20, bottom: 40, left: 70 };
+                const width = rect.width - margin.left - margin.right;
+                const height = 260 - margin.top - margin.bottom;
+
+                const svg = d3.select(container).append('svg')
+                    .attr('width', rect.width)
+                    .attr('height', 260);
+                const g = svg.append('g')
+                    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+                if (usageData.length === 0) {
+                    g.append('text')
+                        .attr('x', width / 2).attr('y', height / 2)
+                        .attr('text-anchor', 'middle')
+                        .style('fill', 'var(--text-tertiary)')
+                        .style('font-size', '14px')
+                        .text('Awaiting history data...');
+                    return;
+                }
+
+                // Build daily cumulative cost
+                const msPerDay = 86400000;
+                const days = Math.ceil((periodEnd - period.start) / msPerDay);
+                const cumData = [];
+                let runningCost = 0;
+
+                for (let i = 0; i < days; i++) {
+                    const dayStart = new Date(period.start.getTime() + i * msPerDay);
+                    const dayEnd = new Date(dayStart.getTime() + msPerDay);
+                    const dayUsage = usageData.filter(
+                        d => d.timestamp >= dayStart && d.timestamp < dayEnd
+                    );
+                    let dayKwh = 0;
+                    dayUsage.forEach(d => { dayKwh += d.value * 0.25; });
+                    runningCost += dayKwh * electricRate;
+                    cumData.push({ date: dayStart, cost: runningCost });
+                }
+
+                const x = d3.scaleTime()
+                    .domain([period.start, periodEnd])
+                    .range([0, width]);
+
+                const maxCost = d3.max(cumData, d => d.cost) || 100;
+                const y = d3.scaleLinear()
+                    .domain([0, maxCost * 1.15])
+                    .range([height, 0]);
+
+                // Grid
+                g.append('g').attr('class', 'grid-lines')
+                    .selectAll('line')
+                    .data(y.ticks(5))
+                    .enter().append('line')
+                    .attr('x1', 0).attr('x2', width)
+                    .attr('y1', d => y(d)).attr('y2', d => y(d));
+
+                // Axes
+                g.append('g').attr('class', 'axis')
+                    .attr('transform', `translate(0,${height})`)
+                    .call(d3.axisBottom(x).ticks(8).tickFormat(d3.timeFormat('%m/%d')));
+
+                g.append('g').attr('class', 'axis')
+                    .call(d3.axisLeft(y).ticks(5).tickFormat(d => '$' + d.toFixed(0)));
+
+                // Gradient fill
+                const defs = svg.append('defs');
+                const grad = defs.append('linearGradient')
+                    .attr('id', 'cumGrad')
+                    .attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
+                grad.append('stop').attr('offset', '0%')
+                    .attr('stop-color', '#4ecdc4').attr('stop-opacity', 0.4);
+                grad.append('stop').attr('offset', '100%')
+                    .attr('stop-color', '#4ecdc4').attr('stop-opacity', 0.02);
+
+                const area = d3.area()
+                    .x(d => x(d.date))
+                    .y0(height)
+                    .y1(d => y(d.cost))
+                    .curve(d3.curveMonotoneX);
+
+                g.append('path')
+                    .datum(cumData)
+                    .attr('fill', 'url(#cumGrad)')
+                    .attr('d', area);
+
+                const line = d3.line()
+                    .x(d => x(d.date))
+                    .y(d => y(d.cost))
+                    .curve(d3.curveMonotoneX);
+
+                const path = g.append('path')
+                    .datum(cumData)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#4ecdc4')
+                    .attr('stroke-width', 2.5)
+                    .attr('d', line);
+
+                // Animate line draw
+                const totalLength = path.node().getTotalLength();
+                path.attr('stroke-dasharray', totalLength)
+                    .attr('stroke-dashoffset', totalLength)
+                    .transition().duration(1500).ease(d3.easeCubicInOut)
+                    .attr('stroke-dashoffset', 0);
+
+                // End dot
+                if (cumData.length > 0) {
+                    const last = cumData[cumData.length - 1];
+                    g.append('circle')
+                        .attr('cx', x(last.date))
+                        .attr('cy', y(last.cost))
+                        .attr('r', 5)
+                        .attr('fill', '#4ecdc4')
+                        .attr('stroke', '#fff')
+                        .attr('stroke-width', 2)
+                        .style('filter', 'drop-shadow(0 0 6px rgba(78, 205, 196, 0.6))')
+                        .style('opacity', 0)
+                        .transition().delay(1500).duration(300)
+                        .style('opacity', 1);
+                }
+
+                // Hover
+                const hoverLine = g.append('line')
+                    .attr('stroke', 'var(--text-tertiary)')
+                    .attr('stroke-dasharray', '4,4')
+                    .style('opacity', 0);
+
+                g.append('rect')
+                    .attr('width', width).attr('height', height)
+                    .attr('fill', 'transparent')
+                    .on('mousemove', function(event) {
+                        const [mx] = d3.pointer(event);
+                        const xDate = x.invert(mx);
+                        const bisect = d3.bisector(d => d.date).left;
+                        const idx = bisect(cumData, xDate, 1);
+                        const d = cumData[Math.min(idx, cumData.length - 1)];
+                        if (!d) return;
+
+                        hoverLine
+                            .attr('x1', x(d.date)).attr('x2', x(d.date))
+                            .attr('y1', 0).attr('y2', height)
+                            .style('opacity', 0.5);
+
+                        const bounds = container.getBoundingClientRect();
+                        tooltip.innerHTML = formatDateFull(d.date) + '<br><strong>' +
+                            formatCurrency(d.cost) + '</strong> cumulative energy cost';
+                        tooltip.classList.add('visible');
+                        tooltip.style.left = (event.clientX - bounds.left + 12) + 'px';
+                        tooltip.style.top = (event.clientY - bounds.top - 50) + 'px';
+                    })
+                    .on('mouseleave', function() {
+                        hoverLine.style('opacity', 0);
+                        tooltip.classList.remove('visible');
+                    });
+            }
+
+            // ── History Discovery via n:history Tag ───────────────────
+            function discoverHistoryOrd(pointOrd) {
+                return new Promise((resolve, reject) => {
+                    baja.Ord.make(pointOrd).get()
+                        .then(entity => entity.tags())
+                        .then(tagMap => {
+                            const historyTag = tagMap.get('n:history');
+                            if (historyTag && historyTag.toString().trim() !== '') {
+                                let historyPath = historyTag.toString();
+                                if (!historyPath.startsWith('history:')) {
+                                    historyPath = 'history:' + historyPath;
+                                }
+                                console.log('Discovered history for ' + pointOrd + ': ' + historyPath);
+                                resolve(historyPath);
+                            } else {
+                                console.warn('No n:history tag on ' + pointOrd);
+                                resolve(null);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Tag discovery failed for ' + pointOrd + ':', err);
+                            resolve(null);
+                        });
+                });
+            }
+
+            // ── Load History Data via BQL ─────────────────────────────
+            function loadHistory(historyOrd, startDate, endDate) {
+                return new Promise((resolve, reject) => {
+                    if (!historyOrd) { resolve([]); return; }
+
+                    const startISO = startDate.toISOString();
+                    const endISO = endDate.toISOString();
+                    const bqlQuery = historyOrd +
+                        "|bql:select timestamp, value where timestamp >= '" +
+                        startISO + "' and timestamp < '" + endISO + "'";
+
+                    console.log('Loading history: ' + bqlQuery);
+                    const records = [];
+
+                    baja.Ord.make(bqlQuery).get({
+                        cursor: {
+                            limit: 50000,
+                            each: function(row) {
+                                const ts = new Date(row.get('timestamp'));
+                                const val = parseFloat(row.get('value'));
+                                if (!isNaN(val)) {
+                                    records.push({ timestamp: ts, value: val });
+                                }
+                            }
+                        }
+                    })
+                    .then(() => {
+                        console.log('Loaded ' + records.length + ' records from ' + historyOrd);
+                        resolve(records);
+                    })
+                    .catch(err => {
+                        console.error('History load error:', err);
+                        resolve([]);
+                    });
+                });
+            }
+
+            // ── Full Data Load for Current Period ─────────────────────
+            function loadPeriodData() {
+                setStatus('Loading history data...');
+                document.querySelectorAll('.kpi-card').forEach(c => c.classList.add('loading'));
+
+                const period = getBillingPeriod(currentPeriodOffset);
+                const now = new Date();
+                const end = period.end < now ? period.end : now;
+
+                const promises = [];
+
+                if (demandHistoryOrd) {
+                    promises.push(
+                        loadHistory(demandHistoryOrd, period.start, end)
+                            .then(data => { demandHistory = data; })
+                    );
+                } else {
+                    promises.push(Promise.resolve());
+                }
+
+                if (usageHistoryOrd) {
+                    promises.push(
+                        loadHistory(usageHistoryOrd, period.start, end)
+                            .then(data => { usageHistory = data; })
+                    );
+                } else {
+                    promises.push(Promise.resolve());
+                }
+
+                Promise.all(promises).then(() => {
+                    if (demandHistory.length === 0 && usageHistory.length === 0) {
+                        setStatus('No history data found — showing demo data');
+                        loadDemoData();
+                    } else {
+                        setStatus('Live data — ' + demandHistory.length +
+                            ' demand records, ' + usageHistory.length + ' usage records');
+                    }
+                    calculateAndRender();
+                });
+            }
+
+            // ── Demo Data ─────────────────────────────────────────────
+            function loadDemoData() {
+                const period = getBillingPeriod(currentPeriodOffset);
+                const now = new Date();
+                const end = period.end < now ? period.end : now;
+                const msPerInterval = 15 * 60 * 1000; // 15 min
+
+                demandHistory = [];
+                usageHistory = [];
+
+                let t = period.start.getTime();
+                let cumulativeKwh = 12000; // Starting meter reading
+
+                while (t < end.getTime()) {
+                    const date = new Date(t);
+                    const hour = date.getHours();
+
+                    // Simulate realistic demand profile
+                    let baseDemand = 45; // Base load kW
+                    if (hour >= 7 && hour <= 18) {
+                        baseDemand = 75 + Math.sin((hour - 7) * Math.PI / 11) * 35;
+                    }
+                    if (hour >= 12 && hour <= 15) baseDemand += 15; // Afternoon peak
+                    const demand = baseDemand + (Math.random() - 0.5) * 10;
+
+                    demandHistory.push({ timestamp: date, value: Math.max(0, demand) });
+
+                    // Cumulative kWh (meter reading style)
+                    cumulativeKwh += demand * 0.25;
+                    usageHistory.push({ timestamp: date, value: cumulativeKwh });
+
+                    t += msPerInterval;
+                }
+            }
+
+            // ── Connect to Live Points ────────────────────────────────
+            function connectToLivePoints() {
+                // Read cost config
+                const configPoints = [
+                    { ord: config.costConfig.electricRate, name: 'ElectricRate' },
+                    { ord: config.costConfig.demandRate, name: 'DemandRate' },
+                    { ord: config.costConfig.billingCycleStart, name: 'BillingCycleStart' }
+                ];
+
+                configPoints.forEach(cp => {
+                    baja.Ord.make(cp.ord).get({ subscriber: subscriber })
+                        .then(point => {
+                            const val = parseFloat(point.getOut().getValueDisplay());
+                            console.log('Config ' + cp.name + ': ' + val);
+
+                            if (cp.name === 'ElectricRate' && !isNaN(val)) electricRate = val;
+                            if (cp.name === 'DemandRate' && !isNaN(val)) demandRate = val;
+                            if (cp.name === 'BillingCycleStart' && !isNaN(val)) billingCycleStart = val;
+
+                            subscriber.attach('changed', function(prop) {
+                                if (prop.getName() === 'out' && this === point) {
+                                    const newVal = parseFloat(this.getOut().getValueDisplay());
+                                    if (cp.name === 'ElectricRate' && !isNaN(newVal)) electricRate = newVal;
+                                    if (cp.name === 'DemandRate' && !isNaN(newVal)) demandRate = newVal;
+                                    if (cp.name === 'BillingCycleStart' && !isNaN(newVal)) billingCycleStart = newVal;
+                                    calculateAndRender();
+                                }
+                            });
+                        })
+                        .catch(err => {
+                            console.warn('Could not connect to ' + cp.name + ':', err);
+                        });
+                });
+            }
+
+            // ── Period Navigation ─────────────────────────────────────
+            document.getElementById('prevPeriod').addEventListener('click', () => {
+                currentPeriodOffset--;
+                updatePeriodLabel();
+                loadPeriodData();
+            });
+            document.getElementById('nextPeriod').addEventListener('click', () => {
+                if (currentPeriodOffset < 0) {
+                    currentPeriodOffset++;
+                    updatePeriodLabel();
+                    loadPeriodData();
+                }
+            });
+            document.getElementById('currentPeriod').addEventListener('click', () => {
+                currentPeriodOffset = 0;
+                updatePeriodLabel();
+                loadPeriodData();
+            });
+
+            // Handle resize
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => calculateAndRender(), 250);
+            });
+
+            // ── Initialize ────────────────────────────────────────────
+            async function init() {
+                setStatus('Connecting to Niagara...');
+                updatePeriodLabel();
+
+                // Connect to live config points
+                connectToLivePoints();
+
+                // Discover history ORDs
+                const [dOrd, uOrd] = await Promise.all([
+                    discoverHistoryOrd(config.points.demand),
+                    discoverHistoryOrd(config.points.usage)
+                ]);
+                demandHistoryOrd = dOrd;
+                usageHistoryOrd = uOrd;
+
+                // Load data
+                loadPeriodData();
+            }
+
+            init();
+
+            // Cleanup
+            window.addEventListener('beforeunload', () => {
+                if (subscriber) subscriber.unsubscribeAll();
+            });
+        });
+    </script>
+</body>
+</html>

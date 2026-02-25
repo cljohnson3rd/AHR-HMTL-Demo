@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Floor Plan - Building Control System</title>
+    <script type='text/javascript' src='/requirejs/config.js'></script>
+    <script type='text/javascript' src='/module/js/com/tridium/js/ext/require/require.min.js'></script>
+    
+    <style>
+        :root {
+            /* Light theme - Industrial minimal aesthetic */
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f7;
+            --bg-quaternary: #f0f0f3;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #6e6e73;
+            --accent-primary: #007aff;
+            --accent-secondary: #34c759;
+            --accent-warning: #ff9500;
+            --accent-error: #ff3b30;
+            --border-light: #d2d2d7;
+            --border-medium: #c6c6cc;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.1);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.15);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            
+            /* Temperature colors */
+            --temp-cold: #2196F3;
+            --temp-cool: #64B5F6;
+            --temp-perfect: #4CAF50;
+            --temp-warm: #FF9800;
+            --temp-hot: #F44336;
+            --temp-unknown: #9E9E9E;
+        }
+
+        body.dark-mode {
+            /* Dark theme - Premium tech aesthetic */
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --bg-quaternary: #3a3a3c;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --text-tertiary: #8e8e93;
+            --accent-primary: #0a84ff;
+            --accent-secondary: #32d74b;
+            --accent-warning: #ff9f0a;
+            --accent-error: #ff453a;
+            --border-light: #38383a;
+            --border-medium: #48484a;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.3);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.4);
+            --glass-bg: rgba(0, 0, 0, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 50px;
+            height: 28px;
+            background: var(--border-medium);
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            width: 20px;
+            height: 20px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        body.dark-mode .theme-toggle::before {
+            content: '';
+            transform: translateX(22px);
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 7px;
+            top: 7px;
+            width: 14px;
+            height: 14px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 1;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 0;
+        }
+        body.dark-mode .theme-toggle .icon-sun { opacity: 0; transform: translateX(22px); }
+        body.dark-mode .theme-toggle .icon-moon { opacity: 1; transform: translateX(22px); }
+
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-light);
+            padding: 24px 40px;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", monospace;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            padding: 40px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Floor Plan Container */
+        .floor-plan-container {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow-heavy);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floor-plan-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 32px;
+            align-items: start;
+        }
+
+        .heatmap-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .heatmap-canvas {
+            width: 100%;
+            height: 600px;
+            display: block;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-medium);
+            height: fit-content;
+        }
+
+        .panel-section {
+            margin-bottom: 32px;
+        }
+
+        .panel-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid var(--border-light);
+            flex-shrink: 0;
+        }
+
+        /* Statistics Grid */
+        .stats-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-quaternary);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: "SF Mono", "Consolas", monospace;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-primary);
+            border-radius: 12px;
+            padding: 16px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: var(--shadow-heavy);
+            z-index: 1000;
+            font-size: 0.9rem;
+            max-width: 240px;
+            backdrop-filter: blur(20px);
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        .tooltip-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--accent-primary);
+            font-size: 1rem;
+        }
+
+        .tooltip-data {
+            display: grid;
+            gap: 4px;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+
+        .tooltip-label {
+            color: var(--text-secondary);
+        }
+
+        .tooltip-value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-family: "SF Mono", "Consolas", monospace;
+        }
+
+        /* Animation classes */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .slide-up {
+            opacity: 0;
+            transform: translateY(40px);
+            animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .floor-plan-wrapper {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .floor-plan-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+
+    <!-- Header -->
+    <header class="header">
+        <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px;">
+            <button onclick="goToPlayback()" style="background: var(--accent-secondary); border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease;">
+                <svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M18,9H16V7H18M18,13H16V11H18M18,17H16V15H18M8,9H6V7H8M8,13H6V11H8M8,17H6V15H8M18,3V5H16V3H8V5H6V3H4V21H6V19H8V21H16V19H18V21H20V3H18Z"/></svg> Playback
+            </button>
+        </div>
+        <h1>Building Floor Plan</h1>
+        <p>Real-time temperature visualization and VAV monitoring</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Floor Plan -->
+        <div class="floor-plan-container fade-in">
+            <div class="floor-plan-wrapper">
+                <div class="heatmap-container">
+                    <canvas id="heatmapCanvas" class="heatmap-canvas" width="1600" height="1000"></canvas>
+                </div>
+
+                <div class="controls-panel slide-up stagger-1">
+                    <!-- Temperature Legend -->
+                    <div class="panel-section">
+                        <div class="panel-title">
+                            <svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z"/></svg> Temperature Legend
+                        </div>
+                        <div class="legend-grid">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--temp-cold);"></div>
+                                <span>Cold (≤ SP - 3°F)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--temp-cool);"></div>
+                                <span>Cool (SP - 1.5°F)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--temp-perfect);"></div>
+                                <span>Perfect (SP ± 1.5°F)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--temp-warm);"></div>
+                                <span>Warm (SP + 1.5°F)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--temp-hot);"></div>
+                                <span>Hot (≥ SP + 3°F)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--temp-unknown);"></div>
+                                <span>No Data</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="panel-section">
+                        <div class="panel-title">
+                            <svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg> Live Statistics
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Total VAVs</span>
+                                <span class="stat-value">20</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Active</span>
+                                <span class="stat-value" id="activeVavs">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">In Range</span>
+                                <span class="stat-value" id="inRangeVavs">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Need Attention</span>
+                                <span class="stat-value" id="outOfRangeVavs">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Avg Temperature</span>
+                                <span class="stat-value" id="avgTemp">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-title" id="tooltipTitle"></div>
+        <div class="tooltip-data" id="tooltipData"></div>
+    </div>
+
+    <script>
+        // Theme Management
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        // Initialize theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-mode');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const currentTheme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+        });
+
+        require(['baja!'], function (baja) {
+            'use strict';
+
+            // Zone definitions from your existing floor plan
+            const zoneDefinitions = [
+                { id: 1, name: 'VAV-01', polygon: [1350,620, 1450,620, 1460,790, 1360,790] },
+                { id: 2, name: 'VAV-02', polygon: [440,70, 440,80, 450,80, 440,260, 540,260, 550,70] },
+                { id: 3, name: 'VAV-03', polygon: [1050,760, 1050,860, 1040,860, 1040,880, 1370,880, 1360,800, 1350,790, 1350,760] },
+                { id: 4, name: 'VAV-04', polygon: [1060,80, 1160,80, 1160,180, 1060,180] },
+                { id: 5, name: 'VAV-05', polygon: [1060,220, 1170,220, 1170,320, 1100,320, 1100,360, 1060,360] },
+                { id: 6, name: 'VAV-06', polygon: [670,450, 810,450, 810,480, 840,480, 840,470, 880,470, 880,530, 670,530] },
+                { id: 7, name: 'VAV-07', polygon: [230,70, 400,70, 390,240, 310,240, 310,270, 210,270] },
+                { id: 8, name: 'VAV-08', polygon: [850,80, 950,80, 950,180, 850,180] },
+                { id: 9, name: 'VAV-09', polygon: [1170,80, 1390,80, 1410,330, 1380,330, 1380,360, 1180,360] },
+                { id: 10, name: 'VAV-10', polygon: [920,430, 1060,430, 1060,390, 1130,390, 1130,530, 920,530] },
+                { id: 11, name: 'VAV-11', polygon: [175,680, 335,680, 325,870, 155,870] },
+                { id: 12, name: 'VAV-12', polygon: [555,70, 650,70, 650,330, 435,330, 445,270, 545,270] },
+                { id: 13, name: 'VAV-13', polygon: [715,80, 845,80, 845,180, 715,180] },
+                { id: 14, name: 'VAV-14', polygon: [985,535, 1115,535, 1115,620, 985,620] },
+                { id: 15, name: 'VAV-15', polygon: [880,220, 880,420, 1030,420, 1020,220] },
+                { id: 16, name: 'VAV-16', polygon: [430,370, 570,370, 570,490, 420,490] },
+                { id: 17, name: 'VAV-17', polygon: [190,570, 340,570, 340,670, 190,670, 190,650, 180,650] },
+                { id: 18, name: 'VAV-18', polygon: [420,500, 570,500, 570,570, 410,570] },
+                { id: 19, name: 'VAV-19', polygon: [670,370, 870,370, 870,420, 840,420, 840,410, 810,410, 810,440, 670,440] },
+                { id: 20, name: 'VAV-20', polygon: [960,80, 1050,80, 1050,180, 960,180] }
+            ];
+
+            // Global variables
+            const vavData = new Map();
+            const subscriber = new baja.Subscriber();
+            let canvas, ctx;
+            let backgroundImg = null;
+            let backgroundLoaded = false;
+
+            // Navigation function
+            window.goToPlayback = function() {
+                const url = '/ord/file:%5EFiles/FloorplanPlayback.html%7Cview:web:FileDownloadView';
+                window.location.href = url;
+            };
+
+            // Initialize canvas
+            function initCanvas() {
+                canvas = document.getElementById('heatmapCanvas');
+                ctx = canvas.getContext('2d');
+                
+                // Add mouse interaction
+                canvas.addEventListener('mousemove', handleMouseMove);
+                canvas.addEventListener('mouseleave', hideTooltip);
+                canvas.addEventListener('click', handleCanvasClick);
+            }
+
+            // Load background image
+            function loadBackgroundImage() {
+                const img = new Image();
+                img.onload = function() {
+                    backgroundImg = img;
+                    backgroundLoaded = true;
+                    render();
+                };
+                img.onerror = function() {
+                    console.warn('Failed to load floor plan image, using grid fallback');
+                    render();
+                };
+                img.src = '/file/images/Floorplans_3D_Grey_01.png';
+            }
+
+            // Get temperature color based on deviation from setpoint
+            function getHeatmapColor(spaceTemp, effSP) {
+                if (spaceTemp === null || effSP === null || isNaN(spaceTemp) || isNaN(effSP)) {
+                    return null;
+                }
+                
+                const deviation = spaceTemp - effSP;
+                
+                if (deviation <= -3) return '#2196F3';
+                if (deviation <= -1.5) return '#64B5F6';
+                if (deviation <= 1.5) return '#4CAF50';
+                if (deviation <= 3) return '#FF9800';
+                return '#F44336';
+            }
+
+            // Get polygon bounds for zone center calculation
+            function getPolygonBounds(polygon) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                for (let i = 0; i < polygon.length; i += 2) {
+                    minX = Math.min(minX, polygon[i]);
+                    maxX = Math.max(maxX, polygon[i]);
+                    minY = Math.min(minY, polygon[i + 1]);
+                    maxY = Math.max(maxY, polygon[i + 1]);
+                }
+                return { minX, minY, maxX, maxY, centerX: (minX + maxX) / 2, centerY: (minY + maxY) / 2 };
+            }
+
+            // Draw zone with gradient and temperature text
+            function drawZoneWithGradient(zone, baseColor) {
+                if (!baseColor) return;
+                
+                const polygon = zone.polygon;
+                if (polygon.length < 6) return;
+                
+                ctx.save();
+                
+                // Create clipping path for zone
+                ctx.beginPath();
+                ctx.moveTo(polygon[0], polygon[1]);
+                for (let i = 2; i < polygon.length; i += 2) {
+                    ctx.lineTo(polygon[i], polygon[i + 1]);
+                }
+                ctx.closePath();
+                ctx.clip();
+                
+                // Calculate zone bounds and center
+                const bounds = getPolygonBounds(polygon);
+                const maxRadius = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 0.6;
+                
+                // Create radial gradient
+                const gradient = ctx.createRadialGradient(
+                    bounds.centerX, bounds.centerY, 0,
+                    bounds.centerX, bounds.centerY, maxRadius
+                );
+                
+                // Parse color for gradient
+                const rgbMatch = baseColor.match(/#([0-9A-Fa-f]{6})/);
+                let r, g, b;
+                
+                if (rgbMatch) {
+                    const hex = rgbMatch[1];
+                    r = parseInt(hex.substr(0, 2), 16);
+                    g = parseInt(hex.substr(2, 2), 16);
+                    b = parseInt(hex.substr(4, 2), 16);
+                } else {
+                    r = g = b = 128;
+                }
+                
+                // Create gradient with good opacity
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.7)`);
+                gradient.addColorStop(0.7, `rgba(${Math.floor(r * 0.8)}, ${Math.floor(g * 0.8)}, ${Math.floor(b * 0.8)}, 0.5)`);
+                gradient.addColorStop(1, `rgba(${Math.floor(r * 0.6)}, ${Math.floor(g * 0.6)}, ${Math.floor(b * 0.6)}, 0.3)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                ctx.restore();
+
+                // Draw temperature text in zone center (with specific positioning adjustments)
+                const data = vavData.get(zone.id);
+                if (data && data.spaceTemp !== null && !isNaN(data.spaceTemp)) {
+                    ctx.save();
+                    ctx.font = 'bold 16px "SF Mono", "Consolas", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    const tempText = `${data.spaceTemp.toFixed(1)}°F`;
+                    
+                    // Adjust text position for specific VAVs to avoid overlaps
+                    let textX = bounds.centerX;
+                    let textY = bounds.centerY;
+                    
+                    if (zone.id === 12) {
+                        // Move VAV-12 text to the right and down to avoid VAV-02 overlap
+                        textX = bounds.centerX + 40;
+                        textY = bounds.centerY + 30;
+                    }
+                    
+                    // Semi-transparent background for text readability (more subtle)
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                    const textMetrics = ctx.measureText(tempText);
+                    const textWidth = textMetrics.width + 8;
+                    const textHeight = 18;
+                    
+                    ctx.fillRect(
+                        textX - textWidth/2, 
+                        textY - textHeight/2, 
+                        textWidth, 
+                        textHeight
+                    );
+                    
+                    // Draw text in white for good contrast
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(tempText, textX, textY);
+                    
+                    // Draw VAV name below temperature
+                    ctx.font = 'bold 12px "SF Mono", "Consolas", monospace';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(zone.name, textX, textY + 25);
+                    
+                    ctx.restore();
+                }
+            }
+
+            // Main render function
+            function render() {
+                if (!ctx) return;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw background image
+                if (backgroundImg && backgroundLoaded) {
+                    ctx.drawImage(backgroundImg, 110, 40, 1400, 900);
+                } else {
+                    // Grid fallback
+                    ctx.fillStyle = '#f8f9fa';
+                    ctx.fillRect(110, 40, 1400, 900);
+                    
+                    ctx.strokeStyle = '#ddd';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    
+                    for (let x = 110; x <= 1510; x += 100) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 40);
+                        ctx.lineTo(x, 940);
+                        ctx.stroke();
+                    }
+                    
+                    for (let y = 40; y <= 940; y += 100) {
+                        ctx.beginPath();
+                        ctx.moveTo(110, y);
+                        ctx.lineTo(1510, y);
+                        ctx.stroke();
+                    }
+                    
+                    ctx.setLineDash([]);
+                }
+                
+                // Draw zones with temperature colors and text
+                zoneDefinitions.forEach(zone => {
+                    const data = vavData.get(zone.id);
+                    if (data) {
+                        const color = getHeatmapColor(data.spaceTemp, data.effSP);
+                        if (color) {
+                            drawZoneWithGradient(zone, color);
+                        }
+                    }
+                });
+            }
+
+            // Mouse interaction handlers
+            function handleMouseMove(event) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (event.clientX - rect.left) * scaleX;
+                const y = (event.clientY - rect.top) * scaleY;
+                
+                // Check if mouse is over any zone
+                for (const zone of zoneDefinitions) {
+                    if (isPointInPolygon(x, y, zone.polygon)) {
+                        showTooltip(event, zone);
+                        canvas.style.cursor = 'pointer';
+                        return;
+                    }
+                }
+                
+                canvas.style.cursor = 'default';
+                hideTooltip();
+            }
+
+            function handleCanvasClick(event) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (event.clientX - rect.left) * scaleX;
+                const y = (event.clientY - rect.top) * scaleY;
+                
+                // Check if click is on any zone
+                for (const zone of zoneDefinitions) {
+                    if (isPointInPolygon(x, y, zone.polygon)) {
+                        navigateToVAV(zone.id);
+                        return;
+                    }
+                }
+            }
+
+            // Navigate to VAV detail page
+            function navigateToVAV(vavId) {
+                const vavNum = vavId.toString().padStart(2, '0');
+                const url = `/ord/file:%5EFiles/VAVGraphic.html%7Cview:web:FileDownloadView?vav=${vavNum}`;
+                window.location.href = url;
+            }
+
+            // Point in polygon test
+            function isPointInPolygon(x, y, polygon) {
+                let inside = false;
+                for (let i = 0, j = polygon.length - 2; i < polygon.length; j = i, i += 2) {
+                    const xi = polygon[i], yi = polygon[i + 1];
+                    const xj = polygon[j], yj = polygon[j + 1];
+                    
+                    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+                        inside = !inside;
+                    }
+                }
+                return inside;
+            }
+
+            // Show tooltip with VAV information
+            function showTooltip(event, zone) {
+                const tooltip = document.getElementById('tooltip');
+                const data = vavData.get(zone.id);
+                
+                document.getElementById('tooltipTitle').textContent = zone.name;
+                
+                let dataHtml = '<div class="tooltip-data">';
+                if (data && data.spaceTemp !== null && !isNaN(data.spaceTemp)) {
+                    dataHtml += `<div class="tooltip-row">
+                        <span class="tooltip-label">Space Temp:</span>
+                        <span class="tooltip-value">${data.spaceTemp.toFixed(1)}°F</span>
+                    </div>`;
+                    dataHtml += `<div class="tooltip-row">
+                        <span class="tooltip-label">Setpoint:</span>
+                        <span class="tooltip-value">${data.effSP ? data.effSP.toFixed(1) + '°F' : 'N/A'}</span>
+                    </div>`;
+                    if (data.effSP && !isNaN(data.effSP)) {
+                        const deviation = data.spaceTemp - data.effSP;
+                        dataHtml += `<div class="tooltip-row">
+                            <span class="tooltip-label">Deviation:</span>
+                            <span class="tooltip-value">${deviation >= 0 ? '+' : ''}${deviation.toFixed(1)}°F</span>
+                        </div>`;
+                    }
+                    dataHtml += `<div style="margin-top: 8px; font-size: 0.8rem; opacity: 0.8;">Click to view details</div>`;
+                } else {
+                    dataHtml += '<div>Loading data...</div>';
+                }
+                dataHtml += '</div>';
+                
+                document.getElementById('tooltipData').innerHTML = dataHtml;
+                tooltip.classList.add('visible');
+                
+                // Position tooltip
+                const offsetX = 25;
+                const offsetY = 25;
+                let left = event.pageX + offsetX;
+                let top = event.pageY + offsetY;
+                
+                const tooltipRect = tooltip.getBoundingClientRect();
+                if (left + tooltipRect.width > window.innerWidth) {
+                    left = event.pageX - tooltipRect.width - offsetX;
+                }
+                if (top + tooltipRect.height > window.innerHeight) {
+                    top = event.pageY - tooltipRect.height - offsetY;
+                }
+                
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            }
+
+            function hideTooltip() {
+                document.getElementById('tooltip').classList.remove('visible');
+            }
+
+            // Update statistics (debounced)
+            let updateStatsTimeout;
+            function updateStats() {
+                clearTimeout(updateStatsTimeout);
+                updateStatsTimeout = setTimeout(() => {
+                    let active = 0;
+                    let inRange = 0;
+                    let outOfRange = 0;
+                    let tempSum = 0;
+                    let tempCount = 0;
+
+                    vavData.forEach(data => {
+                        if (data && data.spaceTemp !== null && !isNaN(data.spaceTemp)) {
+                            active++;
+                            tempSum += data.spaceTemp;
+                            tempCount++;
+
+                            if (data.effSP !== null && !isNaN(data.effSP)) {
+                                const diff = Math.abs(data.spaceTemp - data.effSP);
+                                if (diff <= 1.5) {
+                                    inRange++;
+                                } else {
+                                    outOfRange++;
+                                }
+                            }
+                        }
+                    });
+
+                    document.getElementById('activeVavs').textContent = active;
+                    document.getElementById('inRangeVavs').textContent = inRange;
+                    document.getElementById('outOfRangeVavs').textContent = outOfRange;
+                    document.getElementById('avgTemp').textContent = tempCount > 0 ? 
+                        (tempSum / tempCount).toFixed(1) + '°F' : '-';
+                }, 500);
+            }
+
+            // Connect to Baja points for real-time data
+            function connectToPoints() {
+                zoneDefinitions.forEach(zone => {
+                    const vavFolder = 'VAV' + zone.id.toString().padStart(2, '0');
+                    const spaceTempOrd = `station:|slot:/VAVs/${vavFolder}/SpaceTemp`;
+                    const effSPOrd = `station:|slot:/VAVs/${vavFolder}/EffSP`;
+
+                    vavData.set(zone.id, { spaceTemp: null, effSP: null });
+
+                    // Space Temperature
+                    baja.Ord.make(spaceTempOrd).get({ subscriber: subscriber })
+                        .then(point => {
+                            const value = parseFloat(point.getOut().getValue());
+                            if (!isNaN(value)) {
+                                const data = vavData.get(zone.id);
+                                data.spaceTemp = value;
+                                render();
+                                updateStats();
+                            }
+
+                            subscriber.attach('changed', function(prop) {
+                                if (prop.getName() === 'out' && this === point) {
+                                    const newValue = parseFloat(this.getOut().getValue());
+                                    if (!isNaN(newValue)) {
+                                        const data = vavData.get(zone.id);
+                                        data.spaceTemp = newValue;
+                                        render();
+                                        updateStats();
+                                    }
+                                }
+                            });
+                        })
+                        .catch(err => {
+                            console.warn(`Could not connect to ${spaceTempOrd}:`, err);
+                        });
+
+                    // Effective Setpoint
+                    baja.Ord.make(effSPOrd).get({ subscriber: subscriber })
+                        .then(point => {
+                            const value = parseFloat(point.getOut().getValue());
+                            if (!isNaN(value)) {
+                                const data = vavData.get(zone.id);
+                                data.effSP = value;
+                                render();
+                                updateStats();
+                            }
+
+                            subscriber.attach('changed', function(prop) {
+                                if (prop.getName() === 'out' && this === point) {
+                                    const newValue = parseFloat(this.getOut().getValue());
+                                    if (!isNaN(newValue)) {
+                                        const data = vavData.get(zone.id);
+                                        data.effSP = newValue;
+                                        render();
+                                        updateStats();
+                                    }
+                                }
+                            });
+                        })
+                        .catch(err => {
+                            console.warn(`Could not connect to ${effSPOrd}:`, err);
+                        });
+                });
+            }
+
+            // Initialize everything
+            function init() {
+                initCanvas();
+                loadBackgroundImage();
+                connectToPoints();
+                render();
+            }
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', function() {
+                if (subscriber) subscriber.unsubscribeAll();
+            });
+
+            // Start the application
+            init();
+        });
+    </script>
+</body>
+</html>

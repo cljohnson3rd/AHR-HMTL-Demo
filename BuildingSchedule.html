@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Building Schedule - AHR Expo 2026</title>
+
+  <script type="text/javascript" src="/requirejs/config.js"></script>
+  <script type="text/javascript" src="/module/js/com/tridium/js/ext/require/require.min.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root{
+      --bg-primary:#0f0f0f;
+      --bg-secondary:#1a1a1a;
+      --bg-card:#262626;
+      --accent-cyan:#00d4ff;
+      --accent-electric:#7c3aed;
+      --text-primary:#ffffff;
+      --text-secondary:#a1a1aa;
+      --text-muted:#71717a;
+      --border-color:#404040;
+      --grid-line:#333333;
+      --schedule-active:linear-gradient(135deg,#00d4ff,#0ea5e9);
+      --schedule-hover:rgba(0,212,255,.15);
+      --success-color:#22c55e;
+      --error-color:#ef4444;
+    }
+
+    body.light-mode{
+      --bg-primary:#ffffff;
+      --bg-secondary:#f8fafc;
+      --bg-card:#f1f5f9;
+      --text-primary:#1e293b;
+      --text-secondary:#64748b;
+      --text-muted:#94a3b8;
+      --border-color:#e2e8f0;
+      --grid-line:#cbd5e1;
+      --schedule-active:linear-gradient(135deg,#3b82f6,#1d4ed8);
+      --schedule-hover:rgba(59,130,246,.1);
+    }
+
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      background:var(--bg-primary);
+      color:var(--text-primary);
+      overflow-x:auto;
+      transition:all .3s ease;
+    }
+
+    .container{ max-width:1200px; margin:0 auto; padding:20px; }
+    .header{ text-align:center; margin-bottom:30px; position:relative; }
+    .header h1{
+      font-size:2rem;
+      font-weight:700;
+      background:var(--schedule-active);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+      margin-bottom:8px;
+    }
+
+    .theme-toggle{
+      position:absolute; top:0; right:0;
+      width:50px; height:26px;
+      background:var(--bg-card);
+      border:1px solid var(--border-color);
+      border-radius:13px;
+      cursor:pointer;
+      transition:all .3s ease;
+      display:flex;
+      align-items:center;
+      padding:2px;
+    }
+    .theme-toggle::before{
+      content: '';
+      width:22px; height:22px;
+      background:var(--bg-secondary);
+      border-radius:11px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:12px;
+      transition:all .3s ease;
+    }
+    body.light-mode .theme-toggle::before{ transform:translateX(24px); content: ''; }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 6px;
+            top: 6px;
+            width: 14px;
+            height: 14px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 0;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 1;
+        }
+        body.light-mode .theme-toggle .icon-sun { opacity: 1; transform: translateX(24px); }
+        body.light-mode .theme-toggle .icon-moon { opacity: 0; transform: translateX(24px); }
+
+
+    .controls{
+      display:flex;
+      gap:12px;
+      justify-content:center;
+      margin-bottom:20px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      padding:8px 16px;
+      border:1px solid var(--border-color);
+      border-radius:6px;
+      background:var(--bg-card);
+      color:var(--text-primary);
+      cursor:pointer;
+      transition:all .3s ease;
+      font-family:inherit;
+      font-size:.9rem;
+      font-weight:500;
+    }
+    .btn:hover{ background:var(--accent-cyan); color:#fff; transform:translateY(-1px); }
+    .btn.primary{ background:var(--schedule-active); color:#fff; border:none; }
+
+    .schedule-container{
+      background:var(--bg-secondary);
+      border-radius:12px;
+      padding:20px;
+      border:1px solid var(--border-color);
+      margin-bottom:20px;
+    }
+
+    .schedule-grid{
+      display:grid;
+      grid-template-columns:60px repeat(7,1fr);
+      grid-template-rows:32px repeat(24,24px);
+      gap:1px;
+      background:var(--grid-line);
+      border-radius:8px;
+      overflow:hidden;
+      min-width:600px;
+      max-width:850px;
+      margin:0 auto;
+    }
+
+    .corner-cell{ background:var(--bg-card); }
+
+    .hour-label{
+      background:var(--bg-secondary);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:.65rem;
+      font-weight:600;
+      color:var(--text-muted);
+      border-right:2px solid var(--grid-line);
+    }
+
+    .day-header{
+      background:linear-gradient(135deg,var(--bg-secondary),var(--bg-card));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:.75rem;
+      font-weight:700;
+      color:var(--text-primary);
+      cursor:pointer;
+      transition:all .3s ease;
+      border-bottom:2px solid var(--grid-line);
+      text-transform:uppercase;
+      letter-spacing:.5px;
+    }
+    .day-header:hover{ background:var(--schedule-hover); color:var(--accent-cyan); }
+
+    .time-cell{
+      background:var(--bg-secondary);
+      cursor:pointer;
+      transition:all .2s ease;
+      border:1px solid transparent;
+      user-select:none;
+    }
+    .time-cell:hover{ background:var(--schedule-hover); border-color:var(--accent-cyan); }
+    .time-cell.active{
+      background:var(--schedule-active);
+      box-shadow:inset 0 0 6px rgba(0,217,255,.3);
+      border-color:var(--accent-cyan);
+    }
+    .time-cell.selecting{ background:rgba(124,58,237,.4); border-color:var(--accent-electric); }
+
+    .templates{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      margin:15px 0;
+      flex-wrap:wrap;
+    }
+
+    .template-btn{
+      padding:6px 12px;
+      border:1px solid var(--border-color);
+      border-radius:4px;
+      background:var(--bg-card);
+      color:var(--text-secondary);
+      cursor:pointer;
+      transition:all .3s ease;
+      font-size:.8rem;
+    }
+    .template-btn:hover{ background:var(--accent-cyan); color:#fff; }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:15px;
+      margin-top:20px;
+    }
+    .stat-card{
+      background:var(--bg-card);
+      padding:15px;
+      border-radius:8px;
+      border:1px solid var(--border-color);
+      text-align:center;
+    }
+    .stat-value{
+      font-size:1.5rem;
+      font-weight:700;
+      color:var(--accent-cyan);
+      margin-bottom:4px;
+    }
+    .stat-label{
+      font-size:.8rem;
+      color:var(--text-secondary);
+      text-transform:uppercase;
+      letter-spacing:.5px;
+    }
+
+    .status{
+      text-align:center;
+      margin-top:15px;
+      padding:10px;
+      border-radius:6px;
+      background:var(--bg-card);
+      border:1px solid var(--border-color);
+    }
+    .status-success{ background:rgba(34,197,94,.1); border-color:var(--success-color); color:var(--success-color); }
+    .status-error{ background:rgba(239,68,68,.1); border-color:var(--error-color); color:var(--error-color); }
+
+    .info-panel{
+      background:var(--bg-card);
+      padding:12px;
+      border-radius:6px;
+      border:1px solid var(--border-color);
+      margin-top:15px;
+      font-size:.85rem;
+      color:var(--text-secondary);
+    }
+
+    @media (max-width:768px){
+      .container{ padding:15px; }
+      .schedule-grid{
+        min-width:500px;
+        grid-template-columns:45px repeat(7,1fr);
+        grid-template-rows:28px repeat(24,20px);
+      }
+      .hour-label{ font-size:.6rem; }
+      .day-header{ font-size:.7rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+      <h1>Building Schedule</h1>
+      <p>AHR Expo 2026 - Drag to select time blocks</p>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="clearSchedule()"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M9,8H11V17H9V8M13,8H15V17H13V8Z"/></svg> Clear All</button>
+      <button class="btn" onclick="loadSchedule()"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M2 12H4V17H20V12H22V17C22 18.11 21.11 19 20 19H4C2.9 19 2 18.11 2 17V12M12 15L17.55 9.54L16.13 8.13L13 11.25V2H11V11.25L7.88 8.13L6.46 9.55L12 15Z"/></svg> Load</button>
+      <button class="btn primary" onclick="saveSchedule()"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg> Save to Niagara</button>
+    </div>
+
+    <div class="templates">
+      <button class="template-btn" onclick="applyTemplate('office')">Office Hours</button>
+      <button class="template-btn" onclick="applyTemplate('retail')">Retail</button>
+      <button class="template-btn" onclick="applyTemplate('24-7')">24/7</button>
+      <button class="template-btn" onclick="applyTemplate('weekend')">Weekend Only</button>
+    </div>
+
+    <div class="schedule-container">
+      <div class="schedule-grid" id="scheduleGrid"></div>
+      <div class="info-panel" id="infoPanel">
+        Click and drag to select time blocks. Click day headers to toggle entire days.
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="totalHours">0</div>
+        <div class="stat-label">Total Hours</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="dailyAverage">0</div>
+        <div class="stat-label">Daily Average</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="activeDays">0</div>
+        <div class="stat-label">Active Days</div>
+      </div>
+    </div>
+
+    <div class="status" id="statusMessage" style="display:none;">Schedule loaded successfully</div>
+  </div>
+
+  <script>
+    const SCHEDULE_ORD = 'station:|slot:/Schedules/OccupancySched';
+
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dayNamesInternal = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    let currentTheme = localStorage.getItem('ahr-scheduler-theme') || 'dark';
+
+    if (currentTheme === 'light') body.classList.add('light-mode');
+
+    themeToggle.addEventListener('click', () => {
+      body.classList.toggle('light-mode');
+      currentTheme = body.classList.contains('light-mode') ? 'light' : 'dark';
+      localStorage.setItem('ahr-scheduler-theme', currentTheme);
+    });
+
+    let scheduleData = Array(7).fill().map(() => Array(24).fill(false));
+    let isSelecting = false;
+    let startCell = null;
+    let selectionValue = false;
+    let bajaAPI = null;
+    let scheduleObject = null;
+    let hasInitialized = false;
+    let loadInProgress = false;
+
+    function initializeGrid() {
+      const grid = document.getElementById('scheduleGrid');
+      grid.innerHTML = '';
+
+      const corner = document.createElement('div');
+      corner.className = 'corner-cell';
+      grid.appendChild(corner);
+
+      dayNames.forEach((day, dayIndex) => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'day-header';
+        dayHeader.textContent = day;
+        dayHeader.dataset.day = dayIndex;
+        dayHeader.addEventListener('click', () => toggleDay(dayIndex));
+        grid.appendChild(dayHeader);
+      });
+
+      for (let hour = 0; hour < 24; hour++) {
+        const hourLabel = document.createElement('div');
+        hourLabel.className = 'hour-label';
+        hourLabel.textContent = String(hour).padStart(2,'0');
+        grid.appendChild(hourLabel);
+
+        for (let day = 0; day < 7; day++) {
+          const cell = document.createElement('div');
+          cell.className = 'time-cell';
+          cell.dataset.day = day;
+          cell.dataset.hour = hour;
+          cell.addEventListener('mousedown', handleMouseDown);
+          cell.addEventListener('mouseenter', handleMouseEnter);
+          cell.addEventListener('mouseup', handleMouseUp);
+          cell.addEventListener('touchstart', handleTouchStart);
+          grid.appendChild(cell);
+        }
+      }
+
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    function handleMouseDown(event) {
+      event.preventDefault();
+      const day = parseInt(event.target.dataset.day,10);
+      const hour = parseInt(event.target.dataset.hour,10);
+      startCell = { day, hour };
+      selectionValue = !scheduleData[day][hour];
+      isSelecting = true;
+      scheduleData[day][hour] = selectionValue;
+      updateCellDisplay(event.target);
+      updateSelectionPreview(day, hour, day, hour);
+    }
+
+    function handleMouseEnter(event) {
+      if (!isSelecting) return;
+      const day = parseInt(event.target.dataset.day,10);
+      const hour = parseInt(event.target.dataset.hour,10);
+      updateSelectionPreview(startCell.day, startCell.hour, day, hour);
+    }
+
+    function handleMouseUp(event) {
+      if (!isSelecting) return;
+      const day = parseInt(event.target.dataset.day,10);
+      const hour = parseInt(event.target.dataset.hour,10);
+      applySelection(startCell.day, startCell.hour, day, hour, selectionValue);
+      endSelection();
+    }
+
+    function handleGlobalMouseUp() { endSelection(); }
+
+    function handleTouchStart(event) {
+      event.preventDefault();
+      const day = parseInt(event.target.dataset.day,10);
+      const hour = parseInt(event.target.dataset.hour,10);
+      scheduleData[day][hour] = !scheduleData[day][hour];
+      updateCellDisplay(event.target);
+      updateStatistics();
+    }
+
+    function endSelection() {
+      isSelecting = false;
+      startCell = null;
+      clearSelectionPreview();
+      updateStatistics();
+      updateInfoPanel();
+    }
+
+    function updateSelectionPreview(startDay, startHour, endDay, endHour) {
+      clearSelectionPreview();
+      const minDay = Math.min(startDay,endDay);
+      const maxDay = Math.max(startDay,endDay);
+      const minHour = Math.min(startHour,endHour);
+      const maxHour = Math.max(startHour,endHour);
+      for (let d = minDay; d <= maxDay; d++) {
+        for (let h = minHour; h <= maxHour; h++) {
+          const cell = document.querySelector(`[data-day="${d}"][data-hour="${h}"]`);
+          if (cell) cell.classList.add('selecting');
+        }
+      }
+      const hours = (maxHour - minHour + 1) * (maxDay - minDay + 1);
+      updateInfoPanel(`Selecting ${hours} hour${hours > 1 ? 's' : ''}`);
+    }
+
+    function clearSelectionPreview() {
+      document.querySelectorAll('.selecting').forEach(c => c.classList.remove('selecting'));
+    }
+
+    function applySelection(startDay, startHour, endDay, endHour, value) {
+      const minDay = Math.min(startDay,endDay);
+      const maxDay = Math.max(startDay,endDay);
+      const minHour = Math.min(startHour,endHour);
+      const maxHour = Math.max(startHour,endHour);
+      for (let d = minDay; d <= maxDay; d++) {
+        for (let h = minHour; h <= maxHour; h++) {
+          scheduleData[d][h] = value;
+          const cell = document.querySelector(`[data-day="${d}"][data-hour="${h}"]`);
+          if (cell) updateCellDisplay(cell);
+        }
+      }
+    }
+
+    function updateCellDisplay(cell) {
+      const day = parseInt(cell.dataset.day,10);
+      const hour = parseInt(cell.dataset.hour,10);
+      cell.classList.toggle('active', !!scheduleData[day][hour]);
+    }
+
+    function updateGridDisplay() {
+      document.querySelectorAll('.time-cell').forEach(updateCellDisplay);
+    }
+
+    function toggleDay(dayIndex) {
+      const dayData = scheduleData[dayIndex];
+      const newValue = !dayData.some(Boolean);
+      for (let hour = 0; hour < 24; hour++) scheduleData[dayIndex][hour] = newValue;
+      updateGridDisplay();
+      updateStatistics();
+    }
+
+    function clearSchedule() {
+      scheduleData = Array(7).fill().map(() => Array(24).fill(false));
+      updateGridDisplay();
+      updateStatistics();
+      updateInfoPanel();
+    }
+
+    function applyTemplate(templateName) {
+      clearSchedule();
+      switch (templateName) {
+        case 'office':
+          for (let day = 1; day <= 5; day++) for (let hour = 8; hour < 18; hour++) scheduleData[day][hour] = true;
+          break;
+        case 'retail':
+          for (let day = 1; day <= 6; day++) for (let hour = 10; hour < 21; hour++) scheduleData[day][hour] = true;
+          break;
+        case '24-7':
+          scheduleData = Array(7).fill().map(() => Array(24).fill(true));
+          break;
+        case 'weekend':
+          for (let hour = 12; hour < 22; hour++) { scheduleData[0][hour] = true; scheduleData[6][hour] = true; }
+          break;
+      }
+      updateGridDisplay();
+      updateStatistics();
+    }
+
+    function updateStatistics() {
+      const totalHours = scheduleData.flat().filter(Boolean).length;
+      const activeDays = scheduleData.filter(day => day.some(Boolean)).length;
+      const dailyAverage = activeDays > 0 ? (totalHours / activeDays).toFixed(1) : 0;
+      document.getElementById('totalHours').textContent = totalHours;
+      document.getElementById('dailyAverage').textContent = dailyAverage;
+      document.getElementById('activeDays').textContent = activeDays;
+    }
+
+    function updateInfoPanel(text = '') {
+      document.getElementById('infoPanel').textContent = text || 'Click and drag to select time blocks. Click day headers to toggle entire days.';
+    }
+
+    function showStatus(message, isError = false) {
+      const status = document.getElementById('statusMessage');
+      status.textContent = message;
+      status.className = 'status ' + (isError ? 'status-error' : 'status-success');
+      status.style.display = 'block';
+      setTimeout(() => { status.style.display = 'none'; }, 3000);
+    }
+
+    function initializeBaja() {
+      if (typeof require !== 'undefined' && require.config) {
+        try {
+          require(['baja!'], function (baja) {
+            bajaAPI = baja;
+            setTimeout(() => { loadScheduleFromNiagara(); }, 250);
+          }, function () {
+            fallbackToDemo();
+          });
+        } catch (e) {
+          fallbackToDemo();
+        }
+      } else {
+        fallbackToDemo();
+      }
+    }
+
+    function fallbackToDemo() {
+      showStatus('Niagara not available (demo mode).', true);
+    }
+
+    function ordToString(ord) { return (typeof ord === 'string') ? ord : String(ord); }
+
+    async function rpcGetSnapshot(ordStr) {
+      const result = await bajaAPI.rpc({
+        typeSpec: 'schedule:ScheduleRpc',
+        method: 'getSnapshot',
+        args: [ordStr]
+      });
+      const bson = (typeof result === 'string') ? JSON.parse(result) : result;
+      if (bajaAPI.bson && bajaAPI.bson.importUnknownTypes) {
+        await bajaAPI.bson.importUnknownTypes(bson);
+      }
+      return bajaAPI.bson.decodeValue(bson);
+    }
+
+    async function rpcSaveSnapshot(ordStr, snapshot) {
+      const encoded = bajaAPI.bson.encodeValue(snapshot);
+      await bajaAPI.rpc({
+        typeSpec: 'schedule:ScheduleRpc',
+        method: 'save',
+        args: [ordStr, JSON.stringify(encoded)]
+      });
+    }
+
+    function snapshotGetScheduleRoot(snapshot) {
+      if (snapshot && snapshot.has && snapshot.has('schedule')) return snapshot.get('schedule');
+      return snapshot;
+    }
+
+    function findWeekInSnapshot(snapshot) {
+      const root = snapshotGetScheduleRoot(snapshot);
+      if (root && root.has && root.has('week')) return root.get('week');
+      if (snapshot && snapshot.has && snapshot.has('week')) return snapshot.get('week');
+      if (root && root.has && root.has('schedule')) {
+        const inner = root.get('schedule');
+        if (inner && inner.has && inner.has('week')) return inner.get('week');
+      }
+      return null;
+    }
+
+    function snapshotToGrid(snapshot) {
+      const grid = Array(7).fill().map(() => Array(24).fill(false));
+      const week = findWeekInSnapshot(snapshot);
+      if (!week) return grid;
+
+      for (let d = 0; d < 7; d++) {
+        const dayName = dayNamesInternal[d];
+        if (!week.has || !week.has(dayName)) continue;
+        const ds = week.get(dayName);
+        if (!ds || !ds.has || !ds.has('day')) continue;
+        const dayComp = ds.get('day');
+        if (!dayComp || !dayComp.getSlots) continue;
+
+        dayComp.getSlots().is('schedule:TimeSchedule').each(function (slotName) {
+          try {
+            const ts = dayComp.get(slotName);
+            const sh = ts.get('start').getHour();
+            const fh = ts.get('finish').getHour();
+            if (sh === 0 && fh === 0) {
+              for (let h = 0; h < 24; h++) grid[d][h] = true;
+              return;
+            }
+            const end = (fh === 0) ? 24 : fh;
+            for (let h = sh; h < end && h < 24; h++) grid[d][h] = true;
+          } catch (e) {}
+        });
+      }
+      return grid;
+    }
+
+    function gridToWeekSchedule() {
+      const ws = bajaAPI.$('schedule:WeekSchedule');
+      for (let d = 0; d < 7; d++) {
+        const ds = bajaAPI.$('schedule:DailySchedule', {
+          days: bajaAPI.$('schedule:WeekdaySchedule', {
+            set: bajaAPI.EnumSet.make([d])
+          })
+        });
+        const dayComp = ds.get('day');
+        convertDayRowToRanges(scheduleData[d]).forEach(r => {
+          addTimeScheduleToDay(dayComp, r.startHour, r.finishHour, true);
+        });
+        ws.set({ slot: dayNamesInternal[d], value: ds });
+      }
+      return ws;
+    }
+
+    function makeBajaTime(hour, minute = 0) {
+      return bajaAPI.$('baja:Time').make({ hour, minute, second: 0 });
+    }
+
+    function makeEffectiveValueBoolean(value) {
+      try {
+        return bajaAPI.$('baja:StatusBoolean', { status: bajaAPI.Status.ok, value: !!value });
+      } catch (e) {
+        return bajaAPI.$('baja:Boolean').make(!!value);
+      }
+    }
+
+    function addTimeScheduleToDay(dayComp, startHour, finishHour, value = true) {
+      const finish = (finishHour === 24) ? 0 : finishHour;
+      const ts = bajaAPI.$('schedule:TimeSchedule', {
+        start: makeBajaTime(startHour, 0),
+        finish: makeBajaTime(finish, 0),
+        effectiveValue: makeEffectiveValueBoolean(value)
+      });
+      try {
+        ts.setFlags({ slot: 'effectiveValue', flags: bajaAPI.Flags.OPERATOR | bajaAPI.Flags.USER_DEFINED_1 });
+      } catch (e) {}
+      dayComp.add({ slot: 'time?', value: ts });
+    }
+
+    async function loadScheduleFromNiagara() {
+      if (loadInProgress) return;
+      loadInProgress = true;
+      try {
+        if (!bajaAPI) throw new Error('Baja API not loaded');
+        scheduleObject = await bajaAPI.Ord.make(SCHEDULE_ORD).get();
+        const snapshot = await rpcGetSnapshot(ordToString(SCHEDULE_ORD));
+        scheduleData = snapshotToGrid(snapshot);
+        updateGridDisplay();
+        updateStatistics();
+        showStatus('Schedule loaded from Niagara successfully');
+      } catch (e) {
+        showStatus('Failed to load schedule: ' + (e?.message || e), true);
+      } finally {
+        loadInProgress = false;
+      }
+    }
+
+    async function saveSchedule() {
+      if (!bajaAPI) {
+        showStatus('Demo mode - no Niagara connection', true);
+        return;
+      }
+      const ordStr = ordToString(SCHEDULE_ORD);
+      try {
+        const snapshot = await rpcGetSnapshot(ordStr);
+        const ws = gridToWeekSchedule();
+        const root = snapshotGetScheduleRoot(snapshot);
+        if (root && root.has && root.has('week')) {
+          root.set({ slot: 'week', value: ws });
+        } else if (snapshot && snapshot.has && snapshot.has('week')) {
+          snapshot.set({ slot: 'week', value: ws });
+        } else if (root && root.has && root.has('schedule') && root.get('schedule')?.has('week')) {
+          root.get('schedule').set({ slot: 'week', value: ws });
+        } else {
+          root.set({ slot: 'week', value: ws });
+        }
+        await rpcSaveSnapshot(ordStr, snapshot);
+        showStatus('Schedule saved to Niagara successfully!');
+        setTimeout(() => loadScheduleFromNiagara(), 800);
+      } catch (e) {
+        showStatus('Error saving schedule: ' + (e?.message || e), true);
+      }
+    }
+
+    function convertDayRowToRanges(dayRow) {
+      const ranges = [];
+      let inRange = false;
+      let startHour = 0;
+      for (let h = 0; h < 24; h++) {
+        const active = !!dayRow[h];
+        if (active && !inRange) { inRange = true; startHour = h; }
+        if (inRange) {
+          const nextActive = (h < 23) ? !!dayRow[h + 1] : false;
+          if (h === 23 || !nextActive) {
+            ranges.push({ startHour, finishHour: (h === 23) ? 24 : (h + 1) });
+            inRange = false;
+          }
+        }
+      }
+      return ranges;
+    }
+
+    function loadSchedule() {
+      if (bajaAPI) {
+        loadScheduleFromNiagara();
+      } else {
+        showStatus('No Niagara connection.', true);
+      }
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') endSelection();
+      else if (event.ctrlKey && event.key === 's') { event.preventDefault(); saveSchedule(); }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (hasInitialized) return;
+      hasInitialized = true;
+      initializeGrid();
+      updateStatistics();
+      initializeBaja();
+    });
+  </script>
+</body>
+</html>

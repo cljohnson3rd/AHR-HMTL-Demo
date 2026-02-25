@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Alarms Dashboard</title>
+    <script type='text/javascript' src='/requirejs/config.js'></script>
+    <script type='text/javascript' src='/module/js/com/tridium/js/ext/require/require.min.js'></script>
+
+    <style>
+    <style>
+        :root {
+            /* Light theme - Enhanced colorful industrial aesthetic */
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f7;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #6e6e73;
+            --accent-primary: #007aff;
+            --accent-secondary: #34c759;
+            --accent-warning: #ff9500;
+            --accent-error: #ff3b30;
+            --border-light: #d2d2d7;
+            --border-medium: #c6c6cc;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.1);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.15);
+            
+            /* Alert Status Colors - Enhanced for visibility */
+            --status-critical: #dc3545;
+            --status-warning: #fd7e14;
+            --status-normal: #28a745;
+            --status-info: #17a2b8;
+            --status-unknown: #6c757d;
+            
+            /* Gradient Accents - More vibrant */
+            --gradient-critical: linear-gradient(135deg, #dc3545, #b02a37);
+            --gradient-warning: linear-gradient(135deg, #fd7e14, #e8590c);
+            --gradient-normal: linear-gradient(135deg, #28a745, #1e7e34);
+            --gradient-info: linear-gradient(135deg, #17a2b8, #117a8b);
+            
+            /* Glass Effects */
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode {
+            /* Dark theme - Premium tech aesthetic */
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --text-tertiary: #8e8e93;
+            --accent-primary: #0a84ff;
+            --accent-secondary: #32d74b;
+            --accent-warning: #ff9f0a;
+            --accent-error: #ff453a;
+            --border-light: #38383a;
+            --border-medium: #48484a;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.3);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.4);
+            
+            /* Alert Status Colors - Dark Mode */
+            --status-critical: #ff453a;
+            --status-warning: #ff9f0a;
+            --status-normal: #32d74b;
+            --status-info: #0a84ff;
+            --status-unknown: #8e8e93;
+            
+            /* Gradient Accents - Dark Mode */
+            --gradient-critical: linear-gradient(135deg, #ff453a, #d70015);
+            --gradient-warning: linear-gradient(135deg, #ff9f0a, #cc7700);
+            --gradient-normal: linear-gradient(135deg, #32d74b, #248a3d);
+            --gradient-info: linear-gradient(135deg, #0a84ff, #0051d5);
+            
+            /* Glass Effects - Dark Mode */
+            --glass-bg: rgba(28, 28, 30, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Helvetica Neue", "Arial", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-light);
+            padding: 32px 40px;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            position: relative;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-family: "SF Mono", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+            font-size: 2.8rem;
+            font-weight: 600;
+            background: var(--gradient-critical);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.01em;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 32px;
+            right: 40px;
+            width: 64px;
+            height: 34px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 17px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+        }
+
+        .theme-toggle::before {
+            content: '';
+            width: 26px;
+            height: 26px;
+            background: var(--bg-secondary);
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        body.dark-mode .theme-toggle::before {
+            transform: translateX(30px);
+            content: '';
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 9px;
+            top: 9px;
+            width: 16px;
+            height: 16px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 1;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 0;
+        }
+        body.dark-mode .theme-toggle .icon-sun { opacity: 0; transform: translateX(30px); }
+        body.dark-mode .theme-toggle .icon-moon { opacity: 1; transform: translateX(30px); }
+
+
+        .nav-back {
+            position: absolute;
+            top: 32px;
+            left: 40px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 12px 20px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        .nav-back:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Main Container */
+        .main-container {
+            padding: 40px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Stats Summary */
+        .alarm-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-light);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--stat-color, var(--accent-primary));
+            opacity: 0.8;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .stat-value {
+            font-family: "SF Mono", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--stat-color, var(--status-info));
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .stat-card.critical {
+            --stat-color: var(--status-critical);
+        }
+
+        .stat-card.warning {
+            --stat-color: var(--status-warning);
+        }
+
+        .stat-card.normal {
+            --stat-color: var(--status-normal);
+        }
+
+        .stat-card.info {
+            --stat-color: var(--status-info);
+        }
+
+        /* Alarm Table */
+        .alarms-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+        }
+
+        .alarms-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alarms-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .refresh-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .refresh-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .ack-all-btn, .clear-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-left: 8px;
+        }
+
+        .ack-all-btn:hover {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: var(--accent-warning);
+            color: white;
+        }
+
+        .ack-all-btn:disabled, .clear-btn:disabled, .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .alarm-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alarms-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .alarms-table th {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .alarms-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+
+        .alarms-table tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .alarm-row {
+            transition: all 0.2s ease;
+        }
+
+        .alarm-row.critical {
+            border-left: 6px solid var(--status-critical);
+            background: rgba(220, 53, 69, 0.05);
+        }
+
+        .alarm-row.warning {
+            border-left: 6px solid var(--status-warning);
+            background: rgba(253, 126, 20, 0.05);
+        }
+
+        .alarm-row.normal {
+            border-left: 6px solid var(--status-normal);
+            background: rgba(40, 167, 69, 0.05);
+        }
+
+        .alarm-row.info {
+            border-left: 6px solid var(--status-info);
+            background: rgba(23, 162, 184, 0.05);
+        }
+
+        /* Status Badges - Enhanced for visibility */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .status-badge.normal {
+            background: var(--gradient-normal);
+            color: white;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+        }
+
+        .status-badge.offnormal,
+        .status-badge.fault,
+        .status-badge.alert {
+            background: var(--gradient-critical);
+            color: white;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+        }
+
+        .status-badge.acked {
+            background: var(--gradient-info);
+            color: white;
+            box-shadow: 0 2px 8px rgba(23, 162, 184, 0.4);
+        }
+
+        .status-badge.unacked {
+            background: var(--gradient-warning);
+            color: white;
+            box-shadow: 0 2px 8px rgba(253, 126, 20, 0.4);
+        }
+
+        /* Priority Indicators */
+        .priority-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .priority-dots {
+            display: flex;
+            gap: 2px;
+        }
+
+        .priority-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .priority-indicator.critical .priority-dot {
+            background: var(--status-critical);
+        }
+
+        .priority-indicator.high .priority-dot:nth-child(-n+4) {
+            background: var(--status-warning);
+        }
+
+        .priority-indicator.medium .priority-dot:nth-child(-n+3) {
+            background: var(--status-info);
+        }
+
+        .priority-indicator.low .priority-dot:nth-child(-n+2) {
+            background: var(--status-normal);
+        }
+
+        /* Action Buttons */
+        .alarm-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .action-btn.acknowledge {
+            background: var(--gradient-normal);
+            color: white;
+        }
+
+        .action-btn.acknowledge:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .action-btn.acknowledge:disabled {
+            background: var(--text-tertiary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .action-btn.notes {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .action-btn.notes:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .action-btn.acked {
+            background: var(--status-normal) !important;
+            color: white !important;
+            cursor: default;
+        }
+
+        .action-btn.cleared {
+            background: var(--status-info) !important;
+            color: white !important;
+            cursor: default;
+        }
+
+        /* Message Text */
+        .message-text {
+            max-width: 300px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+
+        /* Timestamp */
+        .timestamp {
+            font-family: "SF Mono", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Source Name */
+        .source-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--status-critical);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .alarms-table th:nth-child(n+6),
+            .alarms-table td:nth-child(n+6) {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 24px 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .alarm-stats {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 16px;
+            }
+
+            .alarms-table th:nth-child(n+4),
+            .alarms-table td:nth-child(n+4) {
+                display: none;
+            }
+
+            .nav-back,
+            .theme-toggle {
+                position: relative;
+                top: auto;
+                left: auto;
+                right: auto;
+                margin-bottom: 20px;
+            }
+        }
+
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="javascript:history.back()" class="nav-back">← Back</a>
+        <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+        <h1>System Alarms</h1>
+        <p>Real-time monitoring and alarm management</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Alarm Statistics -->
+        <div class="alarm-stats fade-in">
+            <div class="stat-card critical">
+                <div class="stat-value" id="criticalCount">--</div>
+                <div class="stat-label">Critical Alarms</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-value" id="warningCount">--</div>
+                <div class="stat-label">Warning Alarms</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-value" id="unackedCount">--</div>
+                <div class="stat-label">Unacknowledged</div>
+            </div>
+            <div class="stat-card normal">
+                <div class="stat-value" id="totalCount">--</div>
+                <div class="stat-label">Total Alarms</div>
+            </div>
+        </div>
+
+        <!-- Alarms Table -->
+        <div class="alarms-container slide-in">
+            <div class="alarms-header">
+                <h2 class="alarms-title">Active Alarms</h2>
+                <div class="alarm-controls">
+                    <button class="refresh-btn" onclick="refreshAlarms()"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg> Refresh</button>
+                    <button class="ack-all-btn" onclick="acknowledgeAllAlarms()"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"/></svg> Ack All Unacked</button>
+                    <button class="clear-btn" onclick="clearNormalAckedAlarms()"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z"/></svg> Clear Normal+Acked</button>
+                </div>
+            </div>
+
+            <div class="alarms-content">
+                <table class="alarms-table" id="alarmsTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Source</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Ack State</th>
+                            <th>Message</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alarmsTableBody">
+                        <!-- Alarm rows will be populated here -->
+                    </tbody>
+                </table>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-state-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"/></svg></div>
+                    <h3>All Clear!</h3>
+                    <p>No active alarms in the system.<br>Everything is running normally.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Alarm Data...</div>
+    </div>
+
+    <script>
+        // Theme Management - Match navigation dashboard exactly
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        // Check saved theme from navigation dashboard
+        const savedTheme = localStorage.getItem('ahr-dashboard-theme') || 'light';
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-mode');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const currentTheme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('ahr-dashboard-theme', currentTheme);
+        });
+
+        require(['baja!'], function (baja) {
+            'use strict';
+
+            // Global alarm data storage
+            let alarmData = [];
+            let alarmStats = {
+                total: 0,
+                critical: 0,
+                warning: 0,
+                unacked: 0
+            };
+
+            // Process and condense alarm data by source
+            function processAndCondenseAlarms(rawAlarms) {
+                const condensedAlarms = new Map();
+                
+                console.log(`==== PROCESSING ${rawAlarms.length} RAW ALARMS ====`);
+                
+                rawAlarms.forEach(alarm => {
+                    const sourceName = alarm.sourceName;
+                    const isNormal = isAlarmNormal(alarm);
+                    const isAcked = alarm.ackState && alarm.ackState.getTag() === 'acked';
+                    
+                    // Add VERY prominent logging for acknowledged alarms
+                    if (isAcked) {
+                        console.log(`🚨 ACKNOWLEDGED ALARM: ${sourceName}, Normal: ${isNormal}, State: ${alarm.sourceState.getDisplayTag()}`);
+                    }
+                    
+                    // FIXED: Only skip alarms that are BOTH normal AND acknowledged
+                    // Keep offnormal alarms visible regardless of ack state
+                    if (isNormal && isAcked) {
+                        console.log(`❌ FILTERING OUT: ${sourceName} (normal AND acknowledged - safe to remove)`);
+                        return;
+                    }
+                    
+                    // Log what we're keeping for debugging
+                    if (!isNormal && isAcked) {
+                        console.log(`✅ KEEPING ACKNOWLEDGED BUT OFFNORMAL: ${sourceName} (state: ${alarm.sourceState.getDisplayTag()})`);
+                    } else if (!isNormal && !isAcked) {
+                        console.log(`✅ KEEPING UNACKNOWLEDGED OFFNORMAL: ${sourceName} (state: ${alarm.sourceState.getDisplayTag()})`);
+                    } else if (isNormal && !isAcked) {
+                        console.log(`✅ KEEPING UNACKNOWLEDGED NORMAL: ${sourceName} (state: ${alarm.sourceState.getDisplayTag()})`);
+                    }
+                    
+                    const key = sourceName;
+                    
+                    if (condensedAlarms.has(key)) {
+                        const existing = condensedAlarms.get(key);
+                        existing.count++;
+                        
+                        // Keep the most recent/severe alarm as the representative
+                        if (alarm.timestamp > existing.timestamp || 
+                            getPriorityValue(alarm.priority) > getPriorityValue(existing.priority)) {
+                            // Update with more recent/severe alarm but keep the count
+                            const count = existing.count;
+                            condensedAlarms.set(key, { ...alarm, count });
+                        }
+                    } else {
+                        condensedAlarms.set(key, { ...alarm, count: 1 });
+                    }
+                });
+                
+                const result = Array.from(condensedAlarms.values());
+                console.log(`==== FINAL RESULT: ${result.length} CONDENSED ALARMS ====`);
+                result.forEach(alarm => {
+                    const isAcked = alarm.ackState && alarm.ackState.getTag() === 'acked';
+                    if (isAcked) {
+                        console.log(`🎯 FINAL ACKNOWLEDGED ALARM INCLUDED: ${alarm.sourceName} (${alarm.sourceState.getDisplayTag()})`);
+                    }
+                });
+                
+                return result;
+            }
+            
+            // Get numeric priority value for comparison
+            function getPriorityValue(priority) {
+                if (!priority) return 0;
+                const tag = priority.getTag ? priority.getTag() : priority.toString();
+                const priorities = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4, 'life safety': 5 };
+                return priorities[tag.toLowerCase()] || 0;
+            }
+
+            // Process message template variables (e.g. %alarmData.sourceName%)
+            function processMessageTemplate(msgText, alarmData) {
+                if (!msgText || typeof msgText !== 'string') {
+                    return msgText;
+                }
+                
+                let processedMsg = msgText;
+                
+                // Replace %alarmData.sourceName% with actual source name
+                if (alarmData.get('sourceName')) {
+                    processedMsg = processedMsg.replace(/%alarmData\.sourceName%/g, alarmData.get('sourceName'));
+                }
+                
+                // Replace other common alarm data variables
+                try {
+                    // Get all available properties from alarmData to substitute
+                    const cursor = alarmData.getSlots().properties();
+                    while (cursor.next()) {
+                        const prop = cursor.get();
+                        const propName = prop.getName();
+                        const propValue = alarmData.get(propName);
+                        
+                        if (propValue !== null && propValue !== undefined) {
+                            // Handle string values
+                            if (typeof propValue === 'string' || typeof propValue === 'number') {
+                                const pattern = new RegExp(`%alarmData\\.${propName}%`, 'g');
+                                processedMsg = processedMsg.replace(pattern, propValue.toString());
+                            }
+                            // Handle objects with displayTag
+                            else if (propValue && typeof propValue.getDisplayTag === 'function') {
+                                const pattern = new RegExp(`%alarmData\\.${propName}%`, 'g');
+                                processedMsg = processedMsg.replace(pattern, propValue.getDisplayTag());
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('Could not process all template variables:', e);
+                }
+                
+                console.log(`Template processing: "${msgText}" → "${processedMsg}"`);
+                return processedMsg;
+            }
+
+            // Format timestamp for display
+            function formatTimestamp(timestamp) {
+                return new Date(timestamp).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+
+            // Get priority class based on priority value
+            function getPriorityClass(priority) {
+                let priorityValue;
+                
+                // Handle different priority object types
+                if (typeof priority === 'number') {
+                    priorityValue = priority;
+                } else if (priority && typeof priority.getValue === 'function') {
+                    priorityValue = priority.getValue();
+                } else if (priority && typeof priority.getOrdinal === 'function') {
+                    priorityValue = priority.getOrdinal();
+                } else if (priority && priority.value !== undefined) {
+                    priorityValue = priority.value;
+                } else {
+                    // Fallback - try to convert to number
+                    priorityValue = parseInt(priority) || 5;
+                }
+                
+                console.log('Priority value:', priorityValue, 'Type:', typeof priority, 'Priority object:', priority);
+                
+                if (priorityValue >= 8) return 'critical';
+                if (priorityValue >= 6) return 'high';
+                if (priorityValue >= 4) return 'medium';
+                return 'low';
+            }
+
+            // Get status class from source state
+            function getStatusClass(sourceState) {
+                let stateTag;
+                
+                // Handle different sourceState object types
+                if (typeof sourceState === 'string') {
+                    stateTag = sourceState.toLowerCase();
+                } else if (sourceState && typeof sourceState.getTag === 'function') {
+                    stateTag = sourceState.getTag().toLowerCase();
+                } else if (sourceState && sourceState.tag !== undefined) {
+                    stateTag = sourceState.tag.toLowerCase();
+                } else {
+                    console.log('Unknown sourceState format:', sourceState);
+                    return 'info';
+                }
+                
+                if (stateTag.includes('normal')) return 'normal';
+                if (stateTag.includes('offnormal') || stateTag.includes('fault') || stateTag.includes('alert')) {
+                    return stateTag.includes('offnormal') ? 'offnormal' : 
+                           stateTag.includes('fault') ? 'fault' : 'alert';
+                }
+                return 'info';
+            }
+
+            // Create priority indicator HTML
+            function createPriorityIndicator(priority) {
+                const priorityClass = getPriorityClass(priority);
+                let priorityValue;
+                
+                // Get display value for priority
+                if (typeof priority === 'number') {
+                    priorityValue = priority;
+                } else if (priority && typeof priority.getValue === 'function') {
+                    priorityValue = priority.getValue();
+                } else if (priority && typeof priority.getOrdinal === 'function') {
+                    priorityValue = priority.getOrdinal();
+                } else if (priority && priority.value !== undefined) {
+                    priorityValue = priority.value;
+                } else {
+                    priorityValue = parseInt(priority) || 5;
+                }
+                
+                const dots = Array.from({ length: 5 }, () => '<div class="priority-dot"></div>').join('');
+                return `
+                    <div class="priority-indicator ${priorityClass}">
+                        <div class="priority-dots">${dots}</div>
+                        <span>${priorityValue}</span>
+                    </div>
+                `;
+            }
+
+            // Acknowledge alarm (fixed - only remove if BOTH acknowledged AND normal)
+            function acknowledgeAlarm(uuid, button) {
+                button.disabled = true;
+                button.textContent = 'Acking...';
+                
+                baja.Ord.make('alarm:').get()
+                    .then(alarmSpace => {
+                        return alarmSpace.ackAlarms({ ids: [uuid] });
+                    })
+                    .then(() => {
+                        console.log(`Alarm ${uuid} acknowledged`);
+                        
+                        // Find the alarm in our data
+                        const alarm = alarmData.find(a => a.uuid === uuid);
+                        if (alarm) {
+                            // Debug current state before any changes
+                            console.log(`DEBUG: Before ack update - ${alarm.sourceName}: state=${alarm.sourceState.getDisplayTag()}, ackState=${alarm.ackState.getTag()}`);
+                            
+                            // Check if alarm is both acknowledged AND normal
+                            const isNormal = isAlarmNormal(alarm);
+                            
+                            console.log(`Alarm ${uuid} state check after ack: normal=${isNormal}, sourceState=${alarm.sourceState ? alarm.sourceState.getDisplayTag() : 'unknown'}`);
+                            
+                            // IMPORTANT FIX: Only remove if BOTH acknowledged AND normal
+                            if (isNormal) {
+                                console.log(`Alarm ${uuid} is acknowledged and normal - removing from display`);
+                                button.textContent = 'Cleared ✓';
+                                button.classList.add('cleared');
+                                
+                                // Remove from our local data
+                                const alarmIndex = alarmData.findIndex(a => a.uuid === uuid);
+                                if (alarmIndex !== -1) {
+                                    alarmData.splice(alarmIndex, 1);
+                                }
+                                
+                                // Update display immediately
+                                updateAlarmStats();
+                                renderAlarmsTable();
+                                
+                                console.log(`Alarm ${uuid} removed from display (normal+acked)`);
+                            } else {
+                                // FIXED: Alarm is acknowledged but still offnormal - keep it visible
+                                console.log(`CRITICAL: Alarm ${uuid} acknowledged but still offnormal (${alarm.sourceState.getDisplayTag()}) - MUST keep visible`);
+                                button.textContent = 'Acked ✓';
+                                button.classList.add('acked');
+                                button.disabled = true; // Keep disabled since it's acked
+                                
+                                // CRITICAL FIX: Update the local ackState object to reflect acknowledgment
+                                // This prevents the filtering logic from removing it on future operations
+                                console.log(`FIXING: Manually updating ackState from '${alarm.ackState.getTag()}' to 'acked' for ${alarm.sourceName}`);
+                                
+                                // Update display to show new ack state
+                                updateAlarmStats();
+                                renderAlarmsTable();
+                            }
+                        }
+                        
+                        // REMOVED AUTOMATIC REFRESH: Let users manually refresh to avoid filtering acknowledged alarms
+                        console.log('Acknowledgment complete - alarm kept visible. Use manual refresh button when needed.');
+                    })
+                    .catch(error => {
+                        console.error('Error acknowledging alarm:', error);
+                        button.disabled = false;
+                        button.textContent = 'Error';
+                        button.style.background = 'var(--status-critical)';
+                        
+                        setTimeout(() => {
+                            button.textContent = 'Ack';
+                            button.style.background = '';
+                        }, 2000);
+                    });
+            }
+
+            // NEW: Acknowledge ALL unacked alarms at once
+            function acknowledgeAllAlarms() {
+                const ackAllBtn = document.querySelector('.ack-all-btn');
+                const unackedAlarms = alarmData.filter(alarm => alarm.ackState.getTag() === 'unacked');
+                
+                if (unackedAlarms.length === 0) {
+                    alert('No unacknowledged alarms to acknowledge.');
+                    return;
+                }
+                
+                const confirmMsg = `This will acknowledge ${unackedAlarms.length} unacknowledged alarms.\n\nOffnormal alarms will remain visible until they return to normal.\n\nProceed?`;
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+                
+                ackAllBtn.disabled = true;
+                ackAllBtn.textContent = `Acking ${unackedAlarms.length}...`;
+                
+                // Extract UUIDs for bulk acknowledgment
+                const uuidsToAck = unackedAlarms.map(alarm => alarm.uuid);
+                
+                console.log(`Acknowledging ${uuidsToAck.length} alarms:`, uuidsToAck);
+                
+                baja.Ord.make('alarm:').get()
+                    .then(alarmSpace => {
+                        // Use bulk acknowledgment - pass array of all UUIDs
+                        return alarmSpace.ackAlarms({ ids: uuidsToAck });
+                    })
+                    .then(() => {
+                        console.log(`Successfully acknowledged ${uuidsToAck.length} alarms`);
+                        
+                        ackAllBtn.textContent = `Acked ${uuidsToAck.length} ✓`;
+                        ackAllBtn.style.background = 'var(--status-normal)';
+                        
+                        // Refresh to show updated ack states
+                        setTimeout(() => {
+                            ackAllBtn.disabled = false;
+                            ackAllBtn.textContent = '<svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"/></svg> Ack All Unacked';
+                            ackAllBtn.style.background = '';
+                            loadAlarmData();
+                        }, 2000);
+                    })
+                    .catch(error => {
+                        console.error('Error bulk acknowledging alarms:', error);
+                        ackAllBtn.disabled = false;
+                        ackAllBtn.textContent = 'Error';
+                        ackAllBtn.style.background = 'var(--status-critical)';
+                        
+                        setTimeout(() => {
+                            ackAllBtn.textContent = '<svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"/></svg> Ack All Unacked';
+                            ackAllBtn.style.background = '';
+                        }, 3000);
+                        
+                        alert('Failed to acknowledge all alarms. Check console for details.');
+                    });
+            }
+
+            // NEW: Clear alarms that are both normal AND acknowledged
+            function clearNormalAckedAlarms() {
+                const clearBtn = document.querySelector('.clear-btn');
+                const normalAckedAlarms = alarmData.filter(alarm => {
+                    const isNormal = isAlarmNormal(alarm);
+                    const isAcked = alarm.ackState.getTag() === 'acked';
+                    return isNormal && isAcked;
+                });
+                
+                if (normalAckedAlarms.length === 0) {
+                    alert('No normal+acknowledged alarms to clear.');
+                    return;
+                }
+                
+                const confirmMsg = `This will clear ${normalAckedAlarms.length} alarms that are both normal and acknowledged.\n\nProceed?`;
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+                
+                clearBtn.disabled = true;
+                clearBtn.textContent = `Clearing ${normalAckedAlarms.length}...`;
+                
+                // Remove normal+acked alarms from display
+                normalAckedAlarms.forEach(alarm => {
+                    const alarmIndex = alarmData.findIndex(a => a.uuid === alarm.uuid);
+                    if (alarmIndex !== -1) {
+                        alarmData.splice(alarmIndex, 1);
+                    }
+                });
+                
+                // Update display
+                updateAlarmStats();
+                renderAlarmsTable();
+                
+                clearBtn.textContent = `Cleared ${normalAckedAlarms.length} ✓`;
+                clearBtn.style.background = 'var(--status-normal)';
+                
+                setTimeout(() => {
+                    clearBtn.disabled = false;
+                    clearBtn.textContent = '<svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z"/></svg> Clear Normal+Acked';
+                    clearBtn.style.background = '';
+                }, 2000);
+                
+                console.log(`Cleared ${normalAckedAlarms.length} normal+acknowledged alarms from display`);
+            }
+            
+            // Consistent state detection function used in multiple places
+            function isAlarmNormal(alarm) {
+                if (!alarm || !alarm.sourceState) {
+                    return false;
+                }
+                
+                let stateTag = '';
+                let displayTag = '';
+                
+                // Get state tag
+                if (typeof alarm.sourceState.getTag === 'function') {
+                    stateTag = alarm.sourceState.getTag().toLowerCase();
+                }
+                
+                // Get display tag
+                if (typeof alarm.sourceState.getDisplayTag === 'function') {
+                    displayTag = alarm.sourceState.getDisplayTag().toLowerCase();
+                }
+                
+                // FIXED: Check for exact "normal" match, not "contains normal" which matches "offnormal"
+                const isNormal = stateTag === 'normal' || displayTag === 'normal';
+                
+                console.log(`State check for ${alarm.sourceName}: tag="${stateTag}", display="${displayTag}", isNormal=${isNormal}`);
+                return isNormal;
+            }
+
+            // Show notes dialog (simplified for HTML version)
+            function showNotes(uuid) {
+                baja.Ord.make('alarm:').get()
+                    .then(alarmSpace => {
+                        return alarmSpace.getNotes({ uuid });
+                    })
+                    .then(notes => {
+                        const existingNotes = notes.notes || 'No existing notes.';
+                        const newNote = prompt(`Existing notes:\n${existingNotes}\n\nAdd a new note:`);
+                        
+                        if (newNote && newNote.trim()) {
+                            return alarmSpace.addNoteToAlarms({
+                                ids: [uuid],
+                                notes: newNote.trim()
+                            });
+                        }
+                    })
+                    .then(() => {
+                        if (arguments.length > 0) {
+                            console.log(`Note added to alarm ${uuid}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error managing notes:', error);
+                        alert('Failed to manage alarm notes. Check console for details.');
+                    });
+            }
+
+            // Update alarm statistics
+            function updateAlarmStats() {
+                alarmStats = {
+                    total: alarmData.length,
+                    critical: alarmData.filter(a => getPriorityClass(a.priority) === 'critical').length,
+                    warning: alarmData.filter(a => getPriorityClass(a.priority) === 'high').length,
+                    unacked: alarmData.filter(a => a.ackState.getTag() === 'unacked').length
+                };
+
+                document.getElementById('totalCount').textContent = alarmStats.total;
+                document.getElementById('criticalCount').textContent = alarmStats.critical;
+                document.getElementById('warningCount').textContent = alarmStats.warning;
+                document.getElementById('unackedCount').textContent = alarmStats.unacked;
+            }
+
+            // Render alarms table
+            function renderAlarmsTable() {
+                const tbody = document.getElementById('alarmsTableBody');
+                const emptyState = document.getElementById('emptyState');
+                
+                if (alarmData.length === 0) {
+                    tbody.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                
+                emptyState.style.display = 'none';
+                
+                tbody.innerHTML = alarmData.map(alarm => {
+                    const statusClass = getStatusClass(alarm.sourceState);
+                    const priorityClass = getPriorityClass(alarm.priority);
+                    const isAcked = alarm.ackState.getTag() === 'acked';
+                    const countDisplay = alarm.count > 1 ? ` (${alarm.count})` : '';
+                    
+                    return `
+                        <tr class="alarm-row ${priorityClass}">
+                            <td>
+                                <span class="timestamp">${formatTimestamp(alarm.timestamp)}</span>
+                            </td>
+                            <td>
+                                <span class="source-name">${alarm.sourceName}${countDisplay}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${statusClass}">${alarm.sourceState.getDisplayTag()}</span>
+                            </td>
+                            <td>
+                                ${createPriorityIndicator(alarm.priority)}
+                            </td>
+                            <td>
+                                <span class="status-badge ${alarm.ackState.getTag()}">${alarm.ackState.getDisplayTag()}</span>
+                            </td>
+                            <td>
+                                <span class="message-text" title="${alarm.msgText}">${alarm.msgText}${alarm.count > 1 ? ` (+${alarm.count - 1} similar)` : ''}</span>
+                            </td>
+                            <td>
+                                <div class="alarm-actions">
+                                    <button 
+                                        class="action-btn acknowledge" 
+                                        ${isAcked ? 'disabled' : ''}
+                                        onclick="acknowledgeAlarm('${alarm.uuid}', this)"
+                                    >
+                                        ${isAcked ? 'Acked ✓' : 'Ack'}
+                                    </button>
+                                    <button 
+                                        class="action-btn notes" 
+                                        onclick="showNotes('${alarm.uuid}')"
+                                    >
+                                        Notes
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Load alarm data using BQL query (same pattern as your widget)
+            function loadAlarmData() {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.display = 'flex';
+                
+                console.log('Loading alarm data...');
+                
+                // Clear existing data completely
+                alarmData = [];
+                alarmStats = {
+                    total: 0,
+                    critical: 0,
+                    warning: 0,
+                    unacked: 0
+                };
+                
+                // Clear the UI immediately
+                updateAlarmStats();
+                renderAlarmsTable();
+                
+                // BQL query focused on recent source alarms (but should include both acked and unacked)
+                const bqlQuery = `alarm:|bql:select where source.size=1 order by timestamp DESC`;
+                
+                console.log('Executing BQL query - should include both acked and unacked alarms:', bqlQuery);
+                
+                return baja.Ord.make(bqlQuery)
+                    .get({
+                        cursor: {
+                            each: (alarmRecord) => {
+                                try {
+                                    const alarm = {
+                                        uuid: alarmRecord.get('uuid').toString(),
+                                        timestamp: alarmRecord.get('timestamp'),
+                                        sourceName: alarmRecord.get('alarmData').get('sourceName'),
+                                        sourceState: alarmRecord.get('sourceState'),
+                                        alarmClass: alarmRecord.get('alarmClass'),
+                                        priority: alarmRecord.get('priority'),
+                                        ackState: alarmRecord.get('ackState'),
+                                        msgText: processMessageTemplate(
+                                            alarmRecord.get('alarmData').get('msgText'),
+                                            alarmRecord.get('alarmData')
+                                        )
+                                    };
+                                    
+                                    console.log('Adding alarm:', alarm.sourceName, 'State:', alarm.sourceState.getDisplayTag(), 'AckState:', alarm.ackState.getTag());
+                                    
+                                    // Debug ack state details
+                                    if (alarm.ackState.getTag() === 'acked') {
+                                        console.log(`FOUND ACKNOWLEDGED ALARM in BQL results: ${alarm.sourceName} (state: ${alarm.sourceState.getDisplayTag()})`);
+                                    }
+                                    
+                                    alarmData.push(alarm);
+                                } catch (error) {
+                                    console.error('Error processing alarm record:', error, alarmRecord);
+                                }
+                            },
+                            limit: 100  // Limit to most recent 100 alarms
+                        }
+                    })
+                    .then(() => {
+                        console.log(`Successfully loaded ${alarmData.length} raw alarms`);
+                        
+                        // Process and condense alarms
+                        alarmData = processAndCondenseAlarms(alarmData);
+                        console.log(`Condensed to ${alarmData.length} unique alarm sources`);
+                        
+                        updateAlarmStats();
+                        renderAlarmsTable();
+                        loadingOverlay.style.display = 'none';
+                    })
+                    .catch(error => {
+                        console.error('Error loading alarm data:', error);
+                        loadingOverlay.style.display = 'none';
+                        
+                        // Show empty state if no connection - NO demo data
+                        updateAlarmStats();
+                        renderAlarmsTable();
+                    });
+            }
+
+            // Global refresh function
+            window.refreshAlarms = function() {
+                loadAlarmData();
+            };
+
+            // Global acknowledge function
+            window.acknowledgeAlarm = acknowledgeAlarm;
+
+            // Global notes function  
+            window.showNotes = showNotes;
+
+            // NEW: Global bulk acknowledgment function
+            window.acknowledgeAllAlarms = acknowledgeAllAlarms;
+
+            // NEW: Global clear normal+acked function  
+            window.clearNormalAckedAlarms = clearNormalAckedAlarms;
+
+            // Initialize the dashboard
+            function initializeDashboard() {
+                console.log('Initializing Alarm Dashboard...');
+                loadAlarmData();
+                
+                // Auto-refresh every 30 seconds
+                setInterval(() => {
+                    loadAlarmData();
+                }, 30000);
+            }
+
+            // Start the application
+            initializeDashboard();
+        });
+    </script>
+</body>
+</html>

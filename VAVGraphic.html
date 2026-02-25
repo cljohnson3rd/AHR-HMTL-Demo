@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAV Terminal - Building Control System</title>
+    <script type='text/javascript' src='/requirejs/config.js'></script>
+    <script type='text/javascript' src='/module/js/com/tridium/js/ext/require/require.min.js'></script>
+    
+    <style>
+        :root {
+            /* Light theme - Industrial minimal aesthetic */
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f7;
+            --bg-quaternary: #f0f0f3;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #6e6e73;
+            --accent-primary: #007aff;
+            --accent-secondary: #34c759;
+            --accent-warning: #ff9500;
+            --accent-error: #ff3b30;
+            --border-light: #d2d2d7;
+            --border-medium: #c6c6cc;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.1);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.15);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        body.dark-mode {
+            /* Dark theme - Premium tech aesthetic */
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --bg-quaternary: #3a3a3c;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --text-tertiary: #8e8e93;
+            --accent-primary: #0a84ff;
+            --accent-secondary: #32d74b;
+            --accent-warning: #ff9f0a;
+            --accent-error: #ff453a;
+            --border-light: #38383a;
+            --border-medium: #48484a;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.3);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.4);
+            --glass-bg: rgba(0, 0, 0, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 50px;
+            height: 28px;
+            background: var(--border-medium);
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            width: 20px;
+            height: 20px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        body.dark-mode .theme-toggle::before {
+            content: '';
+            transform: translateX(22px);
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 7px;
+            top: 7px;
+            width: 14px;
+            height: 14px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 1;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 0;
+        }
+        body.dark-mode .theme-toggle .icon-sun { opacity: 0; transform: translateX(22px); }
+        body.dark-mode .theme-toggle .icon-moon { opacity: 1; transform: translateX(22px); }
+
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-light);
+            padding: 24px 40px;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", monospace;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            padding: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* VAV Diagram Container */
+        .vav-diagram-container {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow-heavy);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vav-diagram {
+            position: relative;
+            width: 1200px;
+            height: 1080px;
+            margin: 0 auto;
+            background: black url('/file/images/FPB/FPB_P_Elec_Heat_2Stg.png') 140px 175px/1007px 652px no-repeat;
+            border-radius: 12px;
+        }
+
+        /* Animation classes */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .slide-up {
+            opacity: 0;
+            transform: translateY(40px);
+            animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        .stagger-5 { animation-delay: 0.5s; }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(40px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        /* Control Panel Styles */
+        .control-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-medium);
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .control-item {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .control-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .control-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: "SF Mono", "Consolas", monospace;
+        }
+
+        .control-inputs {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-input {
+            padding: 6px 10px;
+            border: 1px solid var(--border-medium);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            width: 80px;
+        }
+
+        .control-select {
+            padding: 6px 10px;
+            border: 1px solid var(--border-medium);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            min-width: 120px;
+        }
+
+        .control-button {
+            padding: 6px 14px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .control-button:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-1px);
+        }
+
+        .control-button.release {
+            background: var(--accent-error);
+        }
+
+        .control-button.release:hover {
+            background: #d32f2f;
+        }
+
+        .override-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-error);
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .override-indicator.active {
+            opacity: 1;
+        }
+
+        /* Data Cards Grid */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .data-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-medium);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .data-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-right: 12px;
+            box-shadow: var(--shadow-light);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .data-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            font-family: "SF Mono", "Consolas", monospace;
+        }
+
+        /* Equipment Status Cards */
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .equipment-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow-medium);
+            border-left: 4px solid var(--accent-primary);
+            transition: all 0.3s ease;
+        }
+
+        .equipment-card:hover {
+            transform: translateY(-2px);
+            border-left-color: var(--accent-secondary);
+        }
+
+        .equipment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .equipment-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .equipment-status {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        .status-inactive {
+            background: var(--text-tertiary);
+            color: white;
+        }
+
+        .equipment-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: "SF Mono", "Consolas", monospace;
+            margin-bottom: 8px;
+        }
+
+        .equipment-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Section Headers */
+        .section-header {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            padding-left: 16px;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .data-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .equipment-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .vav-diagram-container {
+                padding: 20px;
+            }
+        }
+
+        /* Visual Enhancements */
+        .data-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 16px 16px 0 0;
+        }
+
+        .equipment-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+
+    <!-- Header -->
+    <header class="header">
+        <h1 id="vav-name">Loading...</h1>
+        <p>Variable Air Volume Terminal</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- VAV Diagram -->
+        <div class="vav-diagram-container fade-in">
+            <div class="vav-diagram">
+                <!-- Positioned image overlays - exact XML coordinates, no scaling -->
+                <!-- Fan: XML layout="515.0,315.0,205.0,189.0" -->
+                <img id="img-fan" src="" alt="Fan" style="position: absolute; top: 315px; left: 515px; width: 205px; height: 189px; pointer-events: none; opacity: 0;">
+                
+                <!-- Damper: XML layout="311.0,392.0,157.0,154.0" -->
+                <img id="img-damper" src="/file/images/FPB/Damper/Damper_0000.png" alt="Damper" style="position: absolute; top: 392px; left: 311px; width: 157px; height: 154px; pointer-events: none;">
+                
+                <!-- Electric Heat 1: XML layout="515.0,413.0,185.0,195.0" -->
+                <img id="img-eh1" src="/file/images/FPB/Elec_Heat_1Stg_ON/Elec_Heat_1Stg_ON_0000.png" alt="Electric Heat 1" style="position: absolute; top: 413px; left: 515px; width: 185px; height: 195px; pointer-events: none;">
+                
+                <!-- Electric Heat 2: XML layout="568.0,432.0,185.0,195.0" -->
+                <img id="img-eh2" src="/file/images/FPB/Elec_Heat_1Stg_ON/Elec_Heat_1Stg_ON_0000.png" alt="Electric Heat 2" style="position: absolute; top: 432px; left: 568px; width: 185px; height: 195px; pointer-events: none;">
+            </div>
+        </div>
+
+        <!-- Equipment Controls -->
+        <div class="control-section slide-up stagger-1">
+            <h2 class="section-header">Equipment Controls</h2>
+            <div class="control-grid">
+                <!-- Occupancy Command -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Occupancy Command</span>
+                        <span class="override-indicator" id="occ-cmd-override"></span>
+                    </div>
+                    <div class="control-value" id="occ-cmd-display">Loading...</div>
+                    <div class="control-inputs">
+                        <select class="control-select" id="occ-cmd-input">
+                            <option value="true">Occupied</option>
+                            <option value="false">Unoccupied</option>
+                        </select>
+                        <select class="control-select" id="occ-cmd-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideOccCmd()">Override</button>
+                        <button class="control-button release" onclick="releaseOccCmd()">Release</button>
+                    </div>
+                </div>
+
+                <!-- Damper Position -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Damper Position</span>
+                        <span class="override-indicator" id="damper-override"></span>
+                    </div>
+                    <div class="control-value" id="damper-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="damper-input" placeholder="%" min="0" max="100">
+                        <select class="control-select" id="damper-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideDamper()">Override</button>
+                        <button class="control-button release" onclick="releaseDamper()">Release</button>
+                    </div>
+                </div>
+
+                <!-- Fan Command -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Fan Command</span>
+                        <span class="override-indicator" id="fan-override"></span>
+                    </div>
+                    <div class="control-value" id="fan-display">Loading...</div>
+                    <div class="control-inputs">
+                        <select class="control-select" id="fan-input">
+                            <option value="true">On</option>
+                            <option value="false">Off</option>
+                        </select>
+                        <select class="control-select" id="fan-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideFan()">Override</button>
+                        <button class="control-button release" onclick="releaseFan()">Release</button>
+                    </div>
+                </div>
+
+                <!-- Electric Heat 1 -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Electric Heat Stage 1</span>
+                        <span class="override-indicator" id="eh1-override"></span>
+                    </div>
+                    <div class="control-value" id="eh1-display">Loading...</div>
+                    <div class="control-inputs">
+                        <select class="control-select" id="eh1-input">
+                            <option value="true">On</option>
+                            <option value="false">Off</option>
+                        </select>
+                        <select class="control-select" id="eh1-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideEH1()">Override</button>
+                        <button class="control-button release" onclick="releaseEH1()">Release</button>
+                    </div>
+                </div>
+
+                <!-- Electric Heat 2 -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Electric Heat Stage 2</span>
+                        <span class="override-indicator" id="eh2-override"></span>
+                    </div>
+                    <div class="control-value" id="eh2-display">Loading...</div>
+                    <div class="control-inputs">
+                        <select class="control-select" id="eh2-input">
+                            <option value="true">On</option>
+                            <option value="false">Off</option>
+                        </select>
+                        <select class="control-select" id="eh2-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideEH2()">Override</button>
+                        <button class="control-button release" onclick="releaseEH2()">Release</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setpoint Controls -->
+        <div class="control-section slide-up stagger-2">
+            <h2 class="section-header">Setpoint Controls</h2>
+            <div class="control-grid">
+                <!-- Occ Cool SP -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Occupied Cool Setpoint</span>
+                    </div>
+                    <div class="control-value" id="occ-cool-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="occ-cool-sp-input" placeholder="°F" step="0.1">
+                        <button class="control-button" onclick="setOccCoolSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- Occ Heat SP -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Occupied Heat Setpoint</span>
+                    </div>
+                    <div class="control-value" id="occ-heat-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="occ-heat-sp-input" placeholder="°F" step="0.1">
+                        <button class="control-button" onclick="setOccHeatSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- Unocc Cool SP -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Unoccupied Cool Setpoint</span>
+                    </div>
+                    <div class="control-value" id="unocc-cool-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="unocc-cool-sp-input" placeholder="°F" step="0.1">
+                        <button class="control-button" onclick="setUnoccCoolSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- Unocc Heat SP -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Unoccupied Heat Setpoint</span>
+                    </div>
+                    <div class="control-value" id="unocc-heat-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="unocc-heat-sp-input" placeholder="°F" step="0.1">
+                        <button class="control-button" onclick="setUnoccHeatSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- Max Flow SP -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Maximum Flow Setpoint</span>
+                    </div>
+                    <div class="control-value" id="max-flow-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="max-flow-sp-input" placeholder="CFM">
+                        <button class="control-button" onclick="setMaxFlowSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- Min Flow SP -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Minimum Flow Setpoint</span>
+                    </div>
+                    <div class="control-value" id="min-flow-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="min-flow-sp-input" placeholder="CFM">
+                        <button class="control-button" onclick="setMinFlowSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- Min Flow Heat SP -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Min Flow Heat Setpoint</span>
+                    </div>
+                    <div class="control-value" id="min-flow-heat-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="min-flow-heat-sp-input" placeholder="CFM">
+                        <button class="control-button" onclick="setMinFlowHeatSp()">Set</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Air Data -->
+        <h2 class="section-header slide-up stagger-1">Terminal Data Monitoring</h2>
+        <div class="data-grid slide-up stagger-3">
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z"/></svg></div>
+                    <div class="card-title">Temperature Control</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Space Temperature</span>
+                    <span class="data-value" id="space-temp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Discharge Temperature</span>
+                    <span class="data-value" id="da-temp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Effective Setpoint</span>
+                    <span class="data-value" id="eff-sp">Loading...</span>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M19,18.31V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V16.3C4.54,16.12 3.95,16 3,16A1,1 0 0,1 2,15A1,1 0 0,1 3,14C3.82,14 4.47,14.08 5,14.21V12.3C4.54,12.12 3.95,12 3,12A1,1 0 0,1 2,11A1,1 0 0,1 3,10C3.82,10 4.47,10.08 5,10.21V8.3C4.54,8.12 3.95,8 3,8A1,1 0 0,1 2,7A1,1 0 0,1 3,6C3.82,6 4.47,6.08 5,6.21V4A2,2 0 0,1 7,2H17A2,2 0 0,1 19,4V6.16C20.78,6.47 21.54,7.13 21.71,7.29C22.1,7.68 22.1,8.32 21.71,8.71C21.32,9.1 20.8,9.09 20.29,8.71V8.71C20.29,8.71 19.25,8 17,8C15.74,8 14.91,8.41 13.95,8.9C12.91,9.41 11.74,10 10,10C9.64,10 9.31,10 9,9.96V7.95C9.3,8 9.63,8 10,8C11.26,8 12.09,7.59 13.05,7.11C14.09,6.59 15.27,6 17,6V4H7V20H17V18C18.5,18 18.97,18.29 19,18.31M17,10C15.27,10 14.09,10.59 13.05,11.11C12.09,11.59 11.26,12 10,12C9.63,12 9.3,12 9,11.95V13.96C9.31,14 9.64,14 10,14C11.74,14 12.91,13.41 13.95,12.9C14.91,12.42 15.74,12 17,12C19.25,12 20.29,12.71 20.29,12.71V12.71C20.8,13.1 21.32,13.1 21.71,12.71C22.1,12.32 22.1,11.69 21.71,11.29C21.5,11.08 20.25,10 17,10M17,14C15.27,14 14.09,14.59 13.05,15.11C12.09,15.59 11.26,16 10,16C9.63,16 9.3,16 9,15.95V17.96C9.31,18 9.64,18 10,18C11.74,18 12.91,17.41 13.95,16.9C14.91,16.42 15.74,16 17,16C19.25,16 20.29,16.71 20.29,16.71V16.71C20.8,17.1 21.32,17.1 21.71,16.71C22.1,16.32 22.1,15.69 21.71,15.29C21.5,15.08 20.25,14 17,14Z"/></svg></div>
+                    <div class="card-title">Airflow Data</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Actual Flow</span>
+                    <span class="data-value" id="act-flow">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Flow Setpoint</span>
+                    <span class="data-value" id="act-flow-sp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Damper Position</span>
+                    <span class="data-value" id="damper-cmd">Loading...</span>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M7 3H5V9H7V3M19 3H17V13H19V3M3 13H5V21H7V13H9V11H3V13M15 7H13V3H11V7H9V9H15V7M11 21H13V11H11V21M15 15V17H17V21H19V17H21V15H15Z"/></svg></div>
+                    <div class="card-title">System Status</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">HVAC Mode Status</span>
+                    <span class="data-value" id="hvac-mode">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Terminal Load</span>
+                    <span class="data-value" id="terminal-load">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Occupancy Status</span>
+                    <span class="data-value" id="occ-cmd">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipment Status -->
+        <h2 class="section-header slide-up stagger-2">Equipment Status</h2>
+        <div class="equipment-grid slide-up stagger-4">
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <span class="equipment-name">Fan</span>
+                    <span class="equipment-status status-inactive" id="fan-status">INACTIVE</span>
+                </div>
+                <div class="equipment-value" id="fan-command">Loading...</div>
+                <div class="equipment-description">Terminal Fan Command</div>
+            </div>
+
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <span class="equipment-name">Electric Heat 1</span>
+                    <span class="equipment-status status-inactive" id="eh1-status">INACTIVE</span>
+                </div>
+                <div class="equipment-value" id="eh1-cmd">Loading...</div>
+                <div class="equipment-description">First Stage Electric Heat</div>
+            </div>
+
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <span class="equipment-name">Electric Heat 2</span>
+                    <span class="equipment-status status-inactive" id="eh2-status">INACTIVE</span>
+                </div>
+                <div class="equipment-value" id="eh2-cmd">Loading...</div>
+                <div class="equipment-description">Second Stage Electric Heat</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Management
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        // Initialize theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-mode');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const currentTheme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+        });
+
+        // Extract VAV ID from URL parameters (matching floorplan pattern)
+        function getVAVId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const vavNum = urlParams.get('vav') || '01'; // Default to 01 if no parameter
+            return `VAV${vavNum}`; // Convert "01" to "VAV01"
+        }
+
+        // Niagara Integration
+        require(['baja!'], function (baja) {
+            'use strict';
+            
+            const subscriber = new baja.Subscriber();
+            const vavId = getVAVId(); // Get VAV ID from URL
+            
+            // Point mappings using dynamic VAV ID  
+            const pointMappings = {
+                // VAV name for title
+                'vav-name': `station:|slot:/VAVs/${vavId}`,
+                
+                // Control points (override capable)
+                'occ-cmd-display': `station:|slot:/VAVs/${vavId}/OccupancyCmd`,
+                'damper-display': `station:|slot:/VAVs/${vavId}/DamperCmd`,
+                'fan-display': `station:|slot:/VAVs/${vavId}/PFanCmd`,
+                'eh1-display': `station:|slot:/VAVs/${vavId}/EH1_Cmd`,
+                'eh2-display': `station:|slot:/VAVs/${vavId}/EH2_Cmd`,
+                
+                // Setpoint controls
+                'occ-cool-sp-display': `station:|slot:/VAVs/${vavId}/OccCoolSP`,
+                'occ-heat-sp-display': `station:|slot:/VAVs/${vavId}/OccHeatSP`,
+                'unocc-cool-sp-display': `station:|slot:/VAVs/${vavId}/UnoccCoolSP`,
+                'unocc-heat-sp-display': `station:|slot:/VAVs/${vavId}/UnoccHeatSP`,
+                'max-flow-sp-display': `station:|slot:/VAVs/${vavId}/MaxFlowSP`,
+                'min-flow-sp-display': `station:|slot:/VAVs/${vavId}/MinFlowSP`,
+                'min-flow-heat-sp-display': `station:|slot:/VAVs/${vavId}/MinFlowHeatSP`,
+                
+                // Read-only data
+                'space-temp': `station:|slot:/VAVs/${vavId}/SpaceTemp`,
+                'da-temp': `station:|slot:/VAVs/${vavId}/DATemp`,
+                'eff-sp': `station:|slot:/VAVs/${vavId}/EffSP`,
+                'act-flow': `station:|slot:/VAVs/${vavId}/ActFlow`,
+                'act-flow-sp': `station:|slot:/VAVs/${vavId}/ActFlowSP`,
+                'damper-cmd': `station:|slot:/VAVs/${vavId}/DamperCmd`,
+                'hvac-mode': `station:|slot:/VAVs/${vavId}/HVACModeStatus`,
+                'terminal-load': `station:|slot:/VAVs/${vavId}/TerminalLoad`,
+                'occ-cmd': `station:|slot:/VAVs/${vavId}/OccupancyCmd`,
+                
+                // Equipment status
+                'fan-command': `station:|slot:/VAVs/${vavId}/PFanCmd`,
+                'eh1-cmd': `station:|slot:/VAVs/${vavId}/EH1_Cmd`,
+                'eh2-cmd': `station:|slot:/VAVs/${vavId}/EH2_Cmd`
+            };
+
+            // Store point references for control operations
+            const pointObjects = new Map();
+            
+            // Connect to points and update display
+            Object.entries(pointMappings).forEach(([elementId, ord]) => {
+                baja.Ord.make(ord).get({ subscriber: subscriber })
+                    .then(point => {
+                        pointObjects.set(ord, point);
+                        updateElement(elementId, point, ord);
+                        
+                        // Subscribe to changes
+                        subscriber.attach('changed', function(prop) {
+                            if (prop.getName() === 'out' && this === point) {
+                                updateElement(elementId, this, ord);
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error(`Error connecting to ${ord}:`, error);
+                        const element = document.getElementById(elementId);
+                        if (element) {
+                            element.textContent = 'Error';
+                            element.style.color = 'var(--accent-error)';
+                        }
+                    });
+            });
+            
+            function updateElement(elementId, point, ord) {
+                const element = document.getElementById(elementId);
+                if (!element) return;
+                
+                try {
+                    if (elementId === 'vav-name') {
+                        element.textContent = point.getDisplayName() || vavId;
+                    } else {
+                        const value = point.getOut().getValueDisplay();
+                        const numericValue = point.getOut().getValue();
+                        const booleanValue = typeof numericValue === 'boolean' ? numericValue : numericValue > 0;
+                        
+                        element.textContent = value;
+                        
+                        // Check override status
+                        checkOverrideStatus(point, ord, elementId);
+                        
+                        // Update equipment status indicators AND visual animations
+                        if (elementId === 'fan-command' || elementId === 'fan-display') {
+                            updateEquipmentStatus('fan-status', booleanValue);
+                            updateFanGraphic(booleanValue);
+                        } else if (elementId === 'eh1-cmd' || elementId === 'eh1-display') {
+                            updateEquipmentStatus('eh1-status', booleanValue);
+                            updateEH1Graphic(booleanValue);
+                        } else if (elementId === 'eh2-cmd' || elementId === 'eh2-display') {
+                            updateEquipmentStatus('eh2-status', booleanValue);
+                            updateEH2Graphic(booleanValue);
+                        } else if (elementId === 'damper-cmd' || elementId === 'damper-display') {
+                            updateDamperGraphic(numericValue);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error updating ${elementId}:`, error);
+                    element.textContent = 'Error';
+                }
+            }
+            
+            function checkOverrideStatus(point, ord, elementId) {
+                try {
+                    let isOverridden = false;
+                    
+                    if (point && typeof point.getStatus === 'function') {
+                        const status = point.getStatus();
+                        if (status) {
+                            const statusStr = status.toString().toLowerCase();
+                            isOverridden = statusStr.includes('overridden') || statusStr.includes('override') || statusStr.includes('manual');
+                        }
+                    }
+                    
+                    // Update override indicators
+                    const indicatorMap = {
+                        'occ-cmd-display': 'occ-cmd-override',
+                        'damper-display': 'damper-override',
+                        'fan-display': 'fan-override',
+                        'eh1-display': 'eh1-override',
+                        'eh2-display': 'eh2-override'
+                    };
+                    
+                    const indicatorId = indicatorMap[elementId];
+                    if (indicatorId) {
+                        const indicator = document.getElementById(indicatorId);
+                        if (indicator) {
+                            indicator.classList.toggle('active', isOverridden);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking override status:', error);
+                }
+            }
+            
+            function updateEquipmentStatus(statusId, isActive) {
+                const statusElement = document.getElementById(statusId);
+                if (!statusElement) return;
+                
+                if (isActive) {
+                    statusElement.textContent = 'ACTIVE';
+                    statusElement.className = 'equipment-status status-active';
+                } else {
+                    statusElement.textContent = 'INACTIVE';
+                    statusElement.className = 'equipment-status status-inactive';
+                }
+            }
+            
+            // Helper function to get duration from dropdown
+            function getDurationInSeconds(controlId) {
+                const durationSelect = document.getElementById(`${controlId}-duration`);
+                if (!durationSelect) return null;
+                
+                const selectedValue = durationSelect.value;
+                return selectedValue === 'permanent' ? null : parseInt(selectedValue);
+            }
+            
+            // Override Functions with Duration Support
+            window.overrideOccCmd = function() {
+                const input = document.getElementById('occ-cmd-input');
+                const value = input.value === 'true';
+                const duration = getDurationInSeconds('occ-cmd');
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/OccupancyCmd`);
+                
+                if (point) {
+                    const slotName = value ? 'active' : 'inactive';
+                    const override = baja.$("control:Override");
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: slotName, value: override })
+                        .then(() => console.log('Occ command override successful'))
+                        .catch(error => {
+                            console.error('Occ command override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideDamper = function() {
+                const input = document.getElementById('damper-input');
+                const value = parseFloat(input.value);
+                const duration = getDurationInSeconds('damper');
+                
+                if (isNaN(value) || value < 0 || value > 100) {
+                    alert('Please enter a valid percentage (0-100)');
+                    return;
+                }
+                
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/DamperCmd`);
+                if (point) {
+                    const override = baja.$("control:NumericOverride", { value: value });
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: 'override', value: override })
+                        .then(() => {
+                            console.log('Damper override successful');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Damper override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideFan = function() {
+                const input = document.getElementById('fan-input');
+                const value = input.value === 'true';
+                const duration = getDurationInSeconds('fan');
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/PFanCmd`);
+                
+                if (point) {
+                    const slotName = value ? 'active' : 'inactive';
+                    const override = baja.$("control:Override");
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: slotName, value: override })
+                        .then(() => console.log('Fan override successful'))
+                        .catch(error => {
+                            console.error('Fan override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideEH1 = function() {
+                const input = document.getElementById('eh1-input');
+                const value = input.value === 'true';
+                const duration = getDurationInSeconds('eh1');
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/EH1_Cmd`);
+                
+                if (point) {
+                    const slotName = value ? 'active' : 'inactive';
+                    const override = baja.$("control:Override");
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: slotName, value: override })
+                        .then(() => console.log('EH1 override successful'))
+                        .catch(error => {
+                            console.error('EH1 override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideEH2 = function() {
+                const input = document.getElementById('eh2-input');
+                const value = input.value === 'true';
+                const duration = getDurationInSeconds('eh2');
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/EH2_Cmd`);
+                
+                if (point) {
+                    const slotName = value ? 'active' : 'inactive';
+                    const override = baja.$("control:Override");
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: slotName, value: override })
+                        .then(() => console.log('EH2 override successful'))
+                        .catch(error => {
+                            console.error('EH2 override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            // Release Functions
+            window.releaseOccCmd = function() {
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/OccupancyCmd`);
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('Occ command release successful');
+                            const indicator = document.getElementById('occ-cmd-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('Occ command release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseDamper = function() {
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/DamperCmd`);
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('Damper release successful');
+                            const indicator = document.getElementById('damper-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('Damper release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseFan = function() {
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/PFanCmd`);
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('Fan release successful');
+                            const indicator = document.getElementById('fan-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('Fan release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseEH1 = function() {
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/EH1_Cmd`);
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('EH1 release successful');
+                            const indicator = document.getElementById('eh1-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('EH1 release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseEH2 = function() {
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/EH2_Cmd`);
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('EH2 release successful');
+                            const indicator = document.getElementById('eh2-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('EH2 release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            // Setpoint Functions
+            window.setOccCoolSp = function() {
+                const input = document.getElementById('occ-cool-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid temperature');
+                    return;
+                }
+                
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/OccCoolSP`);
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('Occ Cool SP set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Occ Cool SP failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setOccHeatSp = function() {
+                const input = document.getElementById('occ-heat-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid temperature');
+                    return;
+                }
+                
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/OccHeatSP`);
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('Occ Heat SP set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Occ Heat SP failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setUnoccCoolSp = function() {
+                const input = document.getElementById('unocc-cool-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid temperature');
+                    return;
+                }
+                
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/UnoccCoolSP`);
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('Unocc Cool SP set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Unocc Cool SP failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setUnoccHeatSp = function() {
+                const input = document.getElementById('unocc-heat-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid temperature');
+                    return;
+                }
+                
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/UnoccHeatSP`);
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('Unocc Heat SP set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Unocc Heat SP failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setMaxFlowSp = function() {
+                const input = document.getElementById('max-flow-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid flow rate');
+                    return;
+                }
+                
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/MaxFlowSP`);
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('Max Flow SP set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Max Flow SP failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setMinFlowSp = function() {
+                const input = document.getElementById('min-flow-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid flow rate');
+                    return;
+                }
+                
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/MinFlowSP`);
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('Min Flow SP set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Min Flow SP failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setMinFlowHeatSp = function() {
+                const input = document.getElementById('min-flow-heat-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid flow rate');
+                    return;
+                }
+                
+                const point = pointObjects.get(`station:|slot:/VAVs/${vavId}/MinFlowHeatSP`);
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('Min Flow Heat SP set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Min Flow Heat SP failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', function() {
+                if (subscriber) subscriber.unsubscribeAll();
+            });
+        });
+        
+        // Visual Animation Functions
+        function updateFanGraphic(isOn) {
+            const fanImg = document.getElementById('img-fan');
+            if (fanImg) {
+                if (isOn) {
+                    fanImg.src = '/file/images/FPB/PFan_ON/PFan_ON.gif';
+                    fanImg.style.opacity = '1';
+                } else {
+                    fanImg.src = '/file/images/FPB/PFan_ON/PFan_ON_0000.png';
+                    fanImg.style.opacity = '1';
+                }
+                console.log(`Fan image updated: ${isOn ? 'PFan_ON.gif' : 'PFan_ON_0000.png'}`);
+            }
+        }
+
+        function updateDamperGraphic(pointValue) {
+            const damperImg = document.getElementById('img-damper');
+            if (damperImg) {
+                let imageName;
+                if (pointValue >= 90.0) imageName = 'Damper_0100.png';
+                else if (pointValue >= 80.0) imageName = 'Damper_0090.png';
+                else if (pointValue >= 70.0) imageName = 'Damper_0080.png';
+                else if (pointValue >= 60.0) imageName = 'Damper_0070.png';
+                else if (pointValue >= 50.0) imageName = 'Damper_0060.png';
+                else if (pointValue >= 40.0) imageName = 'Damper_0050.png';
+                else if (pointValue >= 30.0) imageName = 'Damper_0040.png';
+                else if (pointValue >= 20.0) imageName = 'Damper_0030.png';
+                else if (pointValue >= 10.0) imageName = 'Damper_0020.png';
+                else if (pointValue > 0) imageName = 'Damper_0010.png';
+                else imageName = 'Damper_0000.png';
+                damperImg.src = '/file/images/FPB/Damper/' + imageName;
+                console.log(`Damper image updated: ${imageName} (${Math.round(pointValue)}%)`);
+            }
+        }
+
+        function updateEH1Graphic(isOn) {
+            const eh1Img = document.getElementById('img-eh1');
+            if (eh1Img) {
+                if (isOn) {
+                    eh1Img.src = '/file/images/FPB/Elec_Heat_1Stg_ON/Elec_Heat_1Stg_ON_0100.png';
+                } else {
+                    eh1Img.src = '/file/images/FPB/Elec_Heat_1Stg_ON/Elec_Heat_1Stg_ON_0000.png';
+                }
+                console.log(`EH1 image updated: ${isOn ? 'ON' : 'OFF'}`);
+            }
+        }
+
+        function updateEH2Graphic(isOn) {
+            const eh2Img = document.getElementById('img-eh2');
+            if (eh2Img) {
+                if (isOn) {
+                    eh2Img.src = '/file/images/FPB/Elec_Heat_1Stg_ON/Elec_Heat_1Stg_ON_0100.png';
+                } else {
+                    eh2Img.src = '/file/images/FPB/Elec_Heat_1Stg_ON/Elec_Heat_1Stg_ON_0000.png';
+                }
+                console.log(`EH2 image updated: ${isOn ? 'ON' : 'OFF'}`);
+            }
+        }
+    </script>
+</body>
+</html>

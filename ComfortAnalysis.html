@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comfort Analysis - Building Control System</title>
+    <script type='text/javascript' src='/requirejs/config.js'></script>
+    <script type='text/javascript' src='/module/js/com/tridium/js/ext/require/require.min.js'></script>
+
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --bg-quaternary: #222222;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-tertiary: #808080;
+            --accent-comfort: #4ecdc4;
+            --accent-hot: #ff6b6b;
+            --accent-cold: #45b7d1;
+            --accent-perfect: #00ff88;
+            --accent-warning: #ffd93d;
+            --accent-heat: #ff8c42;
+            --accent-cool: #4ea8de;
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --shadow-glow: 0 0 40px rgba(78, 205, 196, 0.15);
+            --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --gradient-comfort: linear-gradient(135deg, #4ecdc4, #44a89e);
+            --gradient-hot: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            --gradient-cold: linear-gradient(135deg, #45b7d1, #3a9bb5);
+            --gradient-perfect: linear-gradient(135deg, #00ff88, #00cc6a);
+        }
+
+        body.light-mode {
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f5;
+            --bg-quaternary: #eeeeee;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --text-tertiary: #888888;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --shadow-glow: 0 0 40px rgba(78, 205, 196, 0.1);
+            --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Helvetica Neue", "Arial", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bg-grid {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0.03; pointer-events: none; z-index: 0;
+        }
+        .bg-grid svg { width: 100%; height: 100%; }
+        .grid-line {
+            stroke: var(--accent-comfort);
+            stroke-width: 0.5; opacity: 0.3;
+            animation: pulse 4s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:0.1;} 50%{opacity:0.4;} }
+
+        .dashboard-container {
+            position: relative; z-index: 1;
+            padding: 40px; max-width: 1800px; margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center; margin-bottom: 48px; position: relative;
+        }
+        .header h1 {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+            font-size: 3.5rem; font-weight: 700;
+            background: var(--gradient-comfort);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; letter-spacing: -0.02em; margin-bottom: 12px;
+        }
+        .header p { font-size: 1.1rem; color: var(--text-secondary); }
+
+        .theme-toggle {
+            position: absolute; top: 0; right: 0;
+            width: 60px; height: 32px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 16px; cursor: pointer; transition: all 0.3s ease;
+            display: flex; align-items: center; padding: 4px;
+            backdrop-filter: blur(10px);
+        }
+        .theme-toggle::before {
+            content: ''; width: 24px; height: 24px;
+            background: var(--bg-tertiary); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; transition: all 0.3s ease;
+        }
+        body.light-mode .theme-toggle::before {
+            transform: translateX(28px); content: '';
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 9px;
+            top: 9px;
+            width: 14px;
+            height: 14px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 0;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 1;
+        }
+        body.light-mode .theme-toggle .icon-sun { opacity: 1; transform: translateX(28px); }
+        body.light-mode .theme-toggle .icon-moon { opacity: 0; transform: translateX(28px); }
+
+
+        .nav-back {
+            position: absolute; top: 0; left: 0;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 12px; padding: 12px 20px;
+            color: var(--text-primary); text-decoration: none; font-weight: 500;
+            transition: all 0.3s ease; backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-heavy);
+        }
+        .nav-back:hover {
+            background: var(--accent-comfort); color: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+
+        /* Date Selector */
+        .date-selector {
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; margin-bottom: 40px;
+        }
+        .date-btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 12px; padding: 10px 24px;
+            color: var(--text-primary);
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, sans-serif;
+            font-size: 0.95rem; font-weight: 500;
+            cursor: pointer; transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .date-btn:hover, .date-btn.active {
+            background: var(--accent-comfort); color: var(--bg-primary);
+            border-color: var(--accent-comfort);
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+        }
+        .date-label {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+            font-size: 1.1rem; font-weight: 600; color: var(--accent-comfort);
+            padding: 10px 20px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 12px; min-width: 200px; text-align: center;
+        }
+        .date-input {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 12px; padding: 10px 16px;
+            color: var(--text-primary);
+            font-family: "SF Mono", "Consolas", monospace;
+            font-size: 0.95rem; cursor: pointer;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 24px; margin-bottom: 40px;
+        }
+        .kpi-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 28px;
+            backdrop-filter: blur(20px); box-shadow: var(--shadow-heavy);
+            position: relative; overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .kpi-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 3px; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .kpi-card:hover::before { opacity: 1; }
+        .kpi-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-glow), var(--shadow-heavy);
+        }
+        .kpi-card.score::before { background: var(--gradient-comfort); }
+        .kpi-card.in-range::before { background: var(--gradient-perfect); }
+        .kpi-card.worst::before { background: var(--gradient-hot); }
+        .kpi-card.avg-dev::before { background: var(--gradient-cold); }
+
+        .kpi-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .kpi-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .kpi-card.score .kpi-icon { background: var(--gradient-comfort); }
+        .kpi-card.in-range .kpi-icon { background: var(--gradient-perfect); }
+        .kpi-card.worst .kpi-icon { background: var(--gradient-hot); }
+        .kpi-card.avg-dev .kpi-icon { background: var(--gradient-cold); }
+
+        .kpi-title {
+            font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .kpi-value {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", "Liberation Mono", "Menlo", "Monaco", monospace;
+            font-size: 2.4rem; font-weight: 600; margin-bottom: 6px; line-height: 1.1;
+        }
+        .kpi-card.score .kpi-value {
+            background: var(--gradient-comfort);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .kpi-card.in-range .kpi-value {
+            background: var(--gradient-perfect);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .kpi-card.worst .kpi-value {
+            background: var(--gradient-hot);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .kpi-card.avg-dev .kpi-value {
+            background: var(--gradient-cold);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .kpi-sub { font-size: 0.85rem; color: var(--text-tertiary); }
+
+        /* Chart Card */
+        .chart-row {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 32px; margin-bottom: 40px;
+        }
+        .chart-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 24px; padding: 32px;
+            backdrop-filter: blur(20px); box-shadow: var(--shadow-heavy);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .chart-card:hover { box-shadow: var(--shadow-glow), var(--shadow-heavy); }
+        .chart-card.full-width { grid-column: 1 / -1; }
+        .chart-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .chart-title {
+            font-size: 1.3rem; font-weight: 600; color: var(--text-primary);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .chart-title-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; background: var(--gradient-comfort);
+        }
+        .chart-container { width: 100%; position: relative; }
+        .chart-container svg { width: 100%; overflow: visible; }
+
+        /* Zone selector for detail view */
+        .zone-select {
+            background: var(--bg-tertiary); border: 1px solid var(--glass-border);
+            border-radius: 8px; padding: 8px 12px;
+            color: var(--text-primary);
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, sans-serif;
+            font-size: 0.85rem; cursor: pointer;
+        }
+
+        /* d3 styles */
+        .axis text {
+            fill: var(--text-tertiary);
+            font-family: "SF Mono", "Consolas", "Roboto Mono", monospace;
+            font-size: 11px;
+        }
+        .axis line, .axis path { stroke: var(--glass-border); }
+        .grid-lines line {
+            stroke: var(--glass-border); stroke-dasharray: 3,3; opacity: 0.5;
+        }
+
+        .tooltip-box {
+            position: absolute;
+            background: var(--bg-secondary); border: 1px solid var(--glass-border);
+            border-radius: 10px; padding: 12px 16px;
+            pointer-events: none; opacity: 0; transition: opacity 0.15s ease;
+            box-shadow: var(--shadow-heavy); z-index: 10;
+            font-family: "SF Mono", "Consolas", monospace;
+            font-size: 0.8rem; color: var(--text-primary); white-space: nowrap;
+        }
+        .tooltip-box.visible { opacity: 1; }
+
+        /* Zone Ranking Table */
+        .zone-table {
+            width: 100%; border-collapse: separate; border-spacing: 0 4px;
+        }
+        .zone-table th {
+            text-align: left; padding: 12px 16px;
+            font-size: 0.8rem; font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .zone-table td {
+            padding: 12px 16px; font-size: 0.9rem;
+            background: var(--bg-tertiary); color: var(--text-primary);
+        }
+        .zone-table tr td:first-child { border-radius: 8px 0 0 8px; }
+        .zone-table tr td:last-child { border-radius: 0 8px 8px 0; }
+        .zone-table tr:hover td { background: var(--bg-quaternary); }
+
+        .score-bar {
+            height: 8px; border-radius: 4px; background: var(--bg-quaternary);
+            overflow: hidden; min-width: 100px;
+        }
+        .score-bar-fill {
+            height: 100%; border-radius: 4px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mode-dot {
+            display: inline-block; width: 10px; height: 10px;
+            border-radius: 50%; margin-right: 6px;
+        }
+
+        /* Status */
+        .status-bar {
+            margin-top: 24px; text-align: center;
+            font-size: 0.85rem; color: var(--text-tertiary);
+            font-family: "SF Mono", "Consolas", monospace;
+        }
+        .status-bar .live-dot {
+            display: inline-block; width: 8px; height: 8px;
+            background: var(--accent-comfort); border-radius: 50%;
+            margin-right: 8px; animation: blink 2s infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+        .loading { opacity: 0.6; animation: loadPulse 2s infinite; }
+        @keyframes loadPulse { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999; color: white;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top: 4px solid var(--accent-comfort);
+            border-radius: 50%; width: 60px; height: 60px;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+        .loading-progress {
+            font-family: "SF Mono", "Consolas", monospace;
+            font-size: 1rem; color: var(--accent-comfort);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .chart-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .dashboard-container { padding: 20px; }
+            .header h1 { font-size: 2.2rem; }
+            .kpi-grid { grid-template-columns: 1fr; gap: 16px; }
+            .kpi-value { font-size: 1.8rem; }
+            .date-selector { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid">
+        <svg><defs>
+            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                <path d="M 50 0 L 0 0 0 50" fill="none" class="grid-line"/>
+            </pattern>
+        </defs><rect width="100%" height="100%" fill="url(#grid)"/></svg>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="header">
+            <a href="javascript:history.back()" class="nav-back">← Back</a>
+            <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+            <h1>Comfort Analysis</h1>
+            <p>Zone performance scoring and thermal comfort metrics</p>
+        </div>
+
+        <!-- Date Selector -->
+        <div class="date-selector">
+            <button class="date-btn" id="prevDay"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"/></svg></button>
+            <div class="date-label" id="dateLabel">--</div>
+            <button class="date-btn" id="nextDay"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/></svg></button>
+            <input type="date" class="date-input" id="datePicker">
+            <button class="date-btn active" id="todayBtn">Today</button>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card score loading">
+                <div class="kpi-header">
+                    <div class="kpi-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M18 2C17.1 2 16 3 16 4H8C8 3 6.9 2 6 2H2V11C2 12 3 13 4 13H6.2C6.6 15 7.9 16.7 11 17V19.08C8 19.54 8 22 8 22H16C16 22 16 19.54 13 19.08V17C16.1 16.7 17.4 15 17.8 13H20C21 13 22 12 22 11V2H18M6 11H4V4H6V11M20 11H18V4H20V11Z"/></svg></div>
+                    <div class="kpi-title">Comfort Score</div>
+                </div>
+                <div class="kpi-value" id="comfortScore">--</div>
+                <div class="kpi-sub" id="comfortScoreSub">Avg across all zones</div>
+            </div>
+            <div class="kpi-card in-range loading">
+                <div class="kpi-header">
+                    <div class="kpi-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"/></svg></div>
+                    <div class="kpi-title">Time in Range</div>
+                </div>
+                <div class="kpi-value" id="timeInRange">--</div>
+                <div class="kpi-sub" id="timeInRangeSub">Within ±2°F of setpoint</div>
+            </div>
+            <div class="kpi-card worst loading">
+                <div class="kpi-header">
+                    <div class="kpi-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M17.66 11.2C17.43 10.9 17.15 10.64 16.89 10.38C16.22 9.78 15.46 9.35 14.82 8.72C13.33 7.26 13 4.85 13.95 3C13 3.23 12.17 3.75 11.46 4.32C8.87 6.4 7.85 10.07 9.07 13.22C9.11 13.32 9.15 13.42 9.15 13.55C9.15 13.77 9 13.97 8.8 14.05C8.57 14.15 8.33 14.09 8.14 13.93C8.08 13.88 8.04 13.83 8 13.76C6.87 12.33 6.69 10.28 7.45 8.64C5.78 10 4.87 12.3 5 14.47C5.06 14.97 5.12 15.47 5.29 15.97C5.43 16.57 5.7 17.17 6 17.7C7.08 19.43 8.95 20.67 10.96 20.92C13.1 21.19 15.39 20.8 17.03 19.32C18.86 17.66 19.5 15 18.56 12.72L18.43 12.46C18.22 12 17.66 11.2 17.66 11.2M14.5 17.5C14.22 17.74 13.76 18 13.4 18.1C12.28 18.5 11.16 17.94 10.5 17.28C11.69 17 12.4 16.12 12.61 15.23C12.78 14.43 12.46 13.77 12.33 13C12.21 12.26 12.23 11.63 12.5 10.94C12.69 11.32 12.89 11.7 13.13 12C13.9 13 15.11 13.44 15.37 14.8C15.41 14.94 15.43 15.08 15.43 15.23C15.46 16.05 15.1 16.95 14.5 17.5H14.5Z"/></svg></div>
+                    <div class="kpi-title">Worst Zone</div>
+                </div>
+                <div class="kpi-value" id="worstZone">--</div>
+                <div class="kpi-sub" id="worstZoneSub">Lowest comfort score</div>
+            </div>
+            <div class="kpi-card avg-dev loading">
+                <div class="kpi-header">
+                    <div class="kpi-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z"/></svg></div>
+                    <div class="kpi-title">Avg Deviation</div>
+                </div>
+                <div class="kpi-value" id="avgDeviation">--</div>
+                <div class="kpi-sub" id="avgDeviationSub">Mean |temp − setpoint|</div>
+            </div>
+        </div>
+
+        <!-- Zone Ranking + Mode Distribution -->
+        <div class="chart-row">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-title-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div>
+                        Zone Comfort Ranking
+                    </div>
+                </div>
+                <div class="chart-container" id="zoneRankingContainer" style="max-height: 500px; overflow-y: auto;"></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-title-icon" style="background: var(--gradient-hot);"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg></div>
+                        HVAC Mode Distribution
+                    </div>
+                </div>
+                <div class="chart-container" id="modeDistChart" style="height: 400px;">
+                    <div class="tooltip-box" id="modeTooltip"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone Detail: Temp vs Setpoint Timeline -->
+        <div class="chart-row">
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-title-icon" style="background: var(--gradient-cold);"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z"/></svg></div>
+                        Temperature vs Setpoint
+                    </div>
+                    <select class="zone-select" id="zoneDetailSelect"></select>
+                </div>
+                <div class="chart-container" id="tempVsSpChart" style="height: 320px;">
+                    <div class="tooltip-box" id="tempVsSpTooltip"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supply Air + Damper/Reheat Profile -->
+        <div class="chart-row">
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-title-icon" style="background: var(--gradient-perfect);"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z"/></svg></div>
+                        Zone Actuator Profile
+                    </div>
+                    <select class="zone-select" id="actuatorZoneSelect"></select>
+                </div>
+                <div class="chart-container" id="actuatorChart" style="height: 300px;">
+                    <div class="tooltip-box" id="actuatorTooltip"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar" id="statusBar">
+            <span class="live-dot"></span>
+            <span id="statusText">Initializing...</span>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-progress" id="loadingProgress">Loading zone data...</div>
+    </div>
+
+    <script>
+        // Theme
+        const themeToggle = document.getElementById('themeToggle');
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light-mode') document.body.classList.add('light-mode');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light-mode' : 'dark-mode');
+        });
+
+        require(['baja!', 'd3'], function(baja, d3) {
+            'use strict';
+
+            // ── Config ────────────────────────────────────────────────
+            const NUM_VAVS = 20;
+            const COMFORT_TOLERANCE = 2.0; // ±°F for "in range"
+            const INTERVALS_PER_DAY = 96;  // 15-min intervals
+
+            const HVAC_MODES = {
+                1: { name: 'Auto',       color: '#4ecdc4' },
+                2: { name: 'Heat',       color: '#ff8c42' },
+                3: { name: 'Warmup',     color: '#ffd93d' },
+                4: { name: 'Cool',       color: '#4ea8de' },
+                5: { name: 'NightPurge', color: '#9b59b6' },
+                6: { name: 'Cooldown',   color: '#45b7d1' },
+                7: { name: 'Off',        color: '#808080' }
+            };
+
+            const ZONE_NAMES = [
+                'Southeast Corner', 'Northwest Office', 'South Central', 'North Central Office',
+                'Northeast Office', 'Central Meeting', 'West Wing Office', 'North Office Block',
+                'Main Conference', 'East Central', 'Southwest Office', 'Central Open',
+                'North Office Wing', 'East Meeting', 'Central Admin', 'West Central Office',
+                'Southwest Area', 'West Meeting', 'Central Operations', 'North Executive'
+            ];
+
+            // Point names per VAV
+            const VAV_POINTS = ['SpaceTemp', 'EffSP', 'DamperCmd', 'EH1_Cmd', 'EH2_Cmd', 'EH3_Cmd', 'HVACModeStatus'];
+            const AHU_POINTS = {
+                saTemp: 'station:|slot:/AHU01/Inputs/SaTemp',
+                occCmd: 'station:|slot:/AHU01/NetworkSettings/OccCmd'
+            };
+
+            // ── State ─────────────────────────────────────────────────
+            let selectedDate = new Date();
+            selectedDate.setHours(0, 0, 0, 0);
+
+            // zoneData[vavId][timeIndex] = { SpaceTemp, EffSP, DamperCmd, EH1_Cmd, ... }
+            let zoneData = {};
+            let ahuData = { saTemp: new Array(INTERVALS_PER_DAY).fill(null) };
+            let zoneScores = []; // computed per load
+
+            // ── Date Helpers ──────────────────────────────────────────
+            function formatDateFull(d) {
+                const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+            }
+
+            function updateDateLabel() {
+                document.getElementById('dateLabel').textContent = formatDateFull(selectedDate);
+                const picker = document.getElementById('datePicker');
+                picker.value = selectedDate.toISOString().split('T')[0];
+
+                const today = new Date(); today.setHours(0,0,0,0);
+                document.getElementById('todayBtn').classList.toggle('active',
+                    selectedDate.getTime() === today.getTime());
+            }
+
+            function timeIndexToLabel(idx) {
+                const h = Math.floor(idx / 4);
+                const m = (idx % 4) * 15;
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const hour = h === 0 ? 12 : (h > 12 ? h - 12 : h);
+                return hour + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
+            }
+
+            function setStatus(text) {
+                document.getElementById('statusText').textContent = text;
+            }
+
+            // ── History Discovery & Loading ───────────────────────────
+            function discoverHistoryOrd(pointOrd) {
+                return new Promise(resolve => {
+                    baja.Ord.make(pointOrd).get()
+                        .then(entity => entity.tags())
+                        .then(tagMap => {
+                            const tag = tagMap.get('n:history');
+                            if (tag && tag.toString().trim() !== '') {
+                                let path = tag.toString();
+                                if (!path.startsWith('history:')) path = 'history:' + path;
+                                resolve(path);
+                            } else {
+                                resolve(null);
+                            }
+                        })
+                        .catch(() => resolve(null));
+                });
+            }
+
+            function loadHistoryForDay(historyOrd, date) {
+                return new Promise(resolve => {
+                    if (!historyOrd) { resolve(new Array(INTERVALS_PER_DAY).fill(null)); return; }
+
+                    const startOfDay = new Date(date); startOfDay.setHours(0,0,0,0);
+                    const endOfDay = new Date(date); endOfDay.setHours(23,59,59,999);
+
+                    const bqlQuery = historyOrd +
+                        "|bql:select timestamp, value where timestamp >= '" +
+                        startOfDay.toISOString() + "' and timestamp < '" +
+                        endOfDay.toISOString() + "'";
+
+                    const data = new Array(INTERVALS_PER_DAY).fill(null);
+
+                    baja.Ord.make(bqlQuery).get({
+                        cursor: {
+                            limit: 10000,
+                            each: function(row) {
+                                const ts = new Date(row.get('timestamp'));
+                                const val = parseFloat(row.get('value'));
+                                const mins = Math.floor((ts.getTime() - startOfDay.getTime()) / 60000);
+                                const idx = Math.floor(mins / 15);
+                                if (idx >= 0 && idx < INTERVALS_PER_DAY && !isNaN(val)) {
+                                    data[idx] = val;
+                                }
+                            }
+                        }
+                    })
+                    .then(() => resolve(data))
+                    .catch(() => resolve(data));
+                });
+            }
+
+            // ── Load All Zone Data ────────────────────────────────────
+            async function loadAllData() {
+                const overlay = document.getElementById('loadingOverlay');
+                const progress = document.getElementById('loadingProgress');
+                overlay.style.display = 'flex';
+                document.querySelectorAll('.kpi-card').forEach(c => c.classList.add('loading'));
+
+                zoneData = {};
+                ahuData = { saTemp: new Array(INTERVALS_PER_DAY).fill(null) };
+
+                let completed = 0;
+                const totalSteps = NUM_VAVS * VAV_POINTS.length + 1; // +1 for SaTemp
+
+                // Load AHU SaTemp
+                progress.textContent = 'Loading supply air temp...';
+                const saOrd = await discoverHistoryOrd(AHU_POINTS.saTemp);
+                ahuData.saTemp = await loadHistoryForDay(saOrd, selectedDate);
+                completed++;
+
+                // Load each VAV
+                for (let v = 1; v <= NUM_VAVS; v++) {
+                    const vavNum = v.toString().padStart(2, '0');
+                    zoneData[v] = {};
+
+                    for (let p = 0; p < VAV_POINTS.length; p++) {
+                        const pointName = VAV_POINTS[p];
+                        const pointOrd = 'station:|slot:/VAVs/VAV' + vavNum + '/' + pointName;
+
+                        progress.textContent = 'VAV-' + vavNum + ' / ' + pointName +
+                            ' (' + completed + '/' + totalSteps + ')';
+
+                        const histOrd = await discoverHistoryOrd(pointOrd);
+                        const data = await loadHistoryForDay(histOrd, selectedDate);
+
+                        // Store per time index
+                        for (let t = 0; t < INTERVALS_PER_DAY; t++) {
+                            if (!zoneData[v][t]) zoneData[v][t] = {};
+                            zoneData[v][t][pointName] = data[t];
+                        }
+
+                        completed++;
+                    }
+                }
+
+                overlay.style.display = 'none';
+
+                // Check if we got any data
+                let hasData = false;
+                for (let v = 1; v <= NUM_VAVS; v++) {
+                    for (let t = 0; t < INTERVALS_PER_DAY; t++) {
+                        if (zoneData[v][t] && zoneData[v][t].SpaceTemp != null) {
+                            hasData = true; break;
+                        }
+                    }
+                    if (hasData) break;
+                }
+
+                if (!hasData) {
+                    setStatus('No history data found — showing demo data');
+                    loadDemoData();
+                }
+
+                calculateAndRender();
+            }
+
+            // ── Demo Data ─────────────────────────────────────────────
+            function loadDemoData() {
+                for (let v = 1; v <= NUM_VAVS; v++) {
+                    zoneData[v] = {};
+                    const baseSp = 72;
+                    const bias = (Math.random() - 0.5) * 3; // zone personality
+
+                    for (let t = 0; t < INTERVALS_PER_DAY; t++) {
+                        const hour = t / 4;
+                        const isOccupied = hour >= 6 && hour <= 18;
+                        const sp = isOccupied ? baseSp : (hour < 6 ? 65 : 68);
+                        const solar = Math.sin((hour - 8) * Math.PI / 10) * (v % 5) * 0.5;
+                        const temp = sp + bias + solar + (Math.random() - 0.5) * 2;
+
+                        let mode = 7; // Off
+                        if (isOccupied) {
+                            if (temp < sp - 1) mode = 2; // Heat
+                            else if (temp > sp + 1) mode = 4; // Cool
+                            else mode = 1; // Auto
+                        } else if (hour >= 5 && hour < 6) {
+                            mode = 3; // Warmup
+                        }
+
+                        const damper = isOccupied ? 30 + Math.random() * 50 : 0;
+                        const needsHeat = temp < sp - 0.5 && isOccupied;
+
+                        zoneData[v][t] = {
+                            SpaceTemp: temp,
+                            EffSP: sp,
+                            DamperCmd: damper,
+                            EH1_Cmd: needsHeat ? (Math.random() > 0.3 ? 1 : 0) : 0,
+                            EH2_Cmd: needsHeat && temp < sp - 1.5 ? 1 : 0,
+                            EH3_Cmd: needsHeat && temp < sp - 2.5 ? 1 : 0,
+                            HVACModeStatus: mode
+                        };
+                    }
+                }
+
+                // AHU supply air
+                for (let t = 0; t < INTERVALS_PER_DAY; t++) {
+                    const hour = t / 4;
+                    const isOcc = hour >= 6 && hour <= 18;
+                    ahuData.saTemp[t] = isOcc ? 55 + Math.random() * 2 : 65 + Math.random() * 3;
+                }
+            }
+
+            // ── Calculate Scores & Render ─────────────────────────────
+            function calculateAndRender() {
+                zoneScores = [];
+
+                for (let v = 1; v <= NUM_VAVS; v++) {
+                    let inRangeCount = 0;
+                    let totalSamples = 0;
+                    let totalDeviation = 0;
+                    let maxDeviation = 0;
+                    const modeCounts = {};
+
+                    for (let t = 0; t < INTERVALS_PER_DAY; t++) {
+                        const d = zoneData[v] && zoneData[v][t];
+                        if (!d || d.SpaceTemp == null || d.EffSP == null) continue;
+
+                        const dev = Math.abs(d.SpaceTemp - d.EffSP);
+                        totalDeviation += dev;
+                        totalSamples++;
+                        if (dev <= COMFORT_TOLERANCE) inRangeCount++;
+                        if (dev > maxDeviation) maxDeviation = dev;
+
+                        const mode = d.HVACModeStatus;
+                        if (mode != null) modeCounts[mode] = (modeCounts[mode] || 0) + 1;
+                    }
+
+                    const pctInRange = totalSamples > 0 ? (inRangeCount / totalSamples) * 100 : 0;
+                    const avgDev = totalSamples > 0 ? totalDeviation / totalSamples : 0;
+                    // Score: 100 = perfect, penalize for deviation
+                    const score = Math.max(0, Math.min(100, 100 - (avgDev * 15) - (maxDeviation * 2)));
+
+                    zoneScores.push({
+                        vav: v,
+                        name: 'VAV-' + v.toString().padStart(2, '0'),
+                        zoneName: ZONE_NAMES[v - 1] || '',
+                        score: score,
+                        pctInRange: pctInRange,
+                        avgDeviation: avgDev,
+                        maxDeviation: maxDeviation,
+                        samples: totalSamples,
+                        modeCounts: modeCounts
+                    });
+                }
+
+                // Sort by score ascending (worst first for ranking display)
+                zoneScores.sort((a, b) => a.score - b.score);
+
+                updateKPIs();
+                renderZoneRanking();
+                renderModeDistribution();
+                renderTempVsSetpoint();
+                renderActuatorProfile();
+
+                document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('loading'));
+
+                const totalRecords = zoneScores.reduce((s, z) => s + z.samples, 0);
+                setStatus('Loaded ' + totalRecords + ' samples across ' + NUM_VAVS + ' zones');
+            }
+
+            // ── KPI Updates ───────────────────────────────────────────
+            function updateKPIs() {
+                const avgScore = zoneScores.reduce((s, z) => s + z.score, 0) / zoneScores.length;
+                const avgInRange = zoneScores.reduce((s, z) => s + z.pctInRange, 0) / zoneScores.length;
+                const avgDev = zoneScores.reduce((s, z) => s + z.avgDeviation, 0) / zoneScores.length;
+                const worst = zoneScores[0]; // sorted ascending
+
+                document.getElementById('comfortScore').textContent = avgScore.toFixed(0) + '/100';
+                document.getElementById('comfortScoreSub').textContent =
+                    avgScore >= 85 ? 'Excellent comfort' :
+                    avgScore >= 70 ? 'Good comfort' :
+                    avgScore >= 50 ? 'Fair — some zones struggling' : 'Poor — attention needed';
+
+                document.getElementById('timeInRange').textContent = avgInRange.toFixed(1) + '%';
+                document.getElementById('timeInRangeSub').textContent =
+                    'Within ±' + COMFORT_TOLERANCE + '°F of setpoint';
+
+                document.getElementById('worstZone').textContent = worst ? worst.name : '--';
+                document.getElementById('worstZoneSub').textContent = worst
+                    ? worst.zoneName + ' — score ' + worst.score.toFixed(0) : '';
+
+                document.getElementById('avgDeviation').textContent = avgDev.toFixed(1) + '°F';
+                document.getElementById('avgDeviationSub').textContent = 'Mean |temp − setpoint|';
+            }
+
+            // ── Zone Ranking Table ────────────────────────────────────
+            function renderZoneRanking() {
+                const container = document.getElementById('zoneRankingContainer');
+                // Sort by score descending for display (best first)
+                const sorted = [...zoneScores].sort((a, b) => b.score - a.score);
+
+                let html = '<table class="zone-table"><thead><tr>' +
+                    '<th>#</th><th>Zone</th><th>Score</th><th></th>' +
+                    '<th>In Range</th><th>Avg Dev</th></tr></thead><tbody>';
+
+                sorted.forEach((z, i) => {
+                    const scoreColor = z.score >= 85 ? '#00ff88' :
+                        z.score >= 70 ? '#4ecdc4' :
+                        z.score >= 50 ? '#ffd93d' : '#ff6b6b';
+
+                    html += '<tr>' +
+                        '<td style="font-weight:600;color:var(--text-tertiary)">' + (i + 1) + '</td>' +
+                        '<td><strong>' + z.name + '</strong><br>' +
+                            '<span style="font-size:0.8rem;color:var(--text-tertiary)">' + z.zoneName + '</span></td>' +
+                        '<td style="font-family:SF Mono,Consolas,monospace;font-weight:600;color:' + scoreColor + '">' +
+                            z.score.toFixed(0) + '</td>' +
+                        '<td><div class="score-bar"><div class="score-bar-fill" style="width:' +
+                            z.score + '%;background:' + scoreColor + '"></div></div></td>' +
+                        '<td style="font-family:SF Mono,Consolas,monospace">' + z.pctInRange.toFixed(1) + '%</td>' +
+                        '<td style="font-family:SF Mono,Consolas,monospace">' + z.avgDeviation.toFixed(1) + '°F</td>' +
+                        '</tr>';
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            // ── HVAC Mode Distribution (stacked bar per zone) ─────────
+            function renderModeDistribution() {
+                const container = document.getElementById('modeDistChart');
+                const tooltip = document.getElementById('modeTooltip');
+                d3.select(container).selectAll('svg').remove();
+
+                const rect = container.getBoundingClientRect();
+                const margin = { top: 20, right: 120, bottom: 50, left: 70 };
+                const width = rect.width - margin.left - margin.right;
+                const height = 360 - margin.top - margin.bottom;
+
+                const svg = d3.select(container).append('svg')
+                    .attr('width', rect.width).attr('height', 360);
+                const g = svg.append('g')
+                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+                // Build stacked data — sorted by score descending
+                const sorted = [...zoneScores].sort((a, b) => b.score - a.score);
+                const modeKeys = Object.keys(HVAC_MODES).map(Number);
+
+                const stackData = sorted.map(z => {
+                    const total = Object.values(z.modeCounts).reduce((s, c) => s + c, 0) || 1;
+                    const row = { zone: z.name };
+                    modeKeys.forEach(k => {
+                        row['mode_' + k] = ((z.modeCounts[k] || 0) / total) * 100;
+                    });
+                    return row;
+                });
+
+                const y = d3.scaleBand()
+                    .domain(stackData.map(d => d.zone))
+                    .range([0, height]).padding(0.25);
+
+                const x = d3.scaleLinear().domain([0, 100]).range([0, width]);
+
+                const stack = d3.stack()
+                    .keys(modeKeys.map(k => 'mode_' + k));
+                const series = stack(stackData);
+
+                // Bars
+                series.forEach((s, si) => {
+                    const modeKey = modeKeys[si];
+                    g.selectAll('.bar-' + modeKey)
+                        .data(s)
+                        .enter().append('rect')
+                        .attr('y', d => y(d.data.zone))
+                        .attr('x', d => x(d[0]))
+                        .attr('width', d => x(d[1]) - x(d[0]))
+                        .attr('height', y.bandwidth())
+                        .attr('fill', HVAC_MODES[modeKey].color)
+                        .attr('rx', 2)
+                        .on('mouseenter', function(event, d) {
+                            const pct = (d[1] - d[0]).toFixed(1);
+                            tooltip.innerHTML = d.data.zone + '<br>' +
+                                '<span class="mode-dot" style="background:' + HVAC_MODES[modeKey].color + '"></span>' +
+                                HVAC_MODES[modeKey].name + ': ' + pct + '%';
+                            tooltip.classList.add('visible');
+                        })
+                        .on('mousemove', function(event) {
+                            const bounds = container.getBoundingClientRect();
+                            tooltip.style.left = (event.clientX - bounds.left + 12) + 'px';
+                            tooltip.style.top = (event.clientY - bounds.top - 40) + 'px';
+                        })
+                        .on('mouseleave', function() { tooltip.classList.remove('visible'); });
+                });
+
+                // Axes
+                g.append('g').attr('class', 'axis')
+                    .call(d3.axisLeft(y).tickSize(0));
+                g.append('g').attr('class', 'axis')
+                    .attr('transform', 'translate(0,' + height + ')')
+                    .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + '%'));
+
+                // Legend
+                const legend = svg.append('g')
+                    .attr('transform', 'translate(' + (margin.left + width + 16) + ',' + margin.top + ')');
+
+                modeKeys.forEach((k, i) => {
+                    const ly = i * 22;
+                    legend.append('rect')
+                        .attr('x', 0).attr('y', ly)
+                        .attr('width', 12).attr('height', 12)
+                        .attr('rx', 3).attr('fill', HVAC_MODES[k].color);
+                    legend.append('text')
+                        .attr('x', 18).attr('y', ly + 10)
+                        .style('fill', 'var(--text-secondary)')
+                        .style('font-size', '11px')
+                        .text(HVAC_MODES[k].name);
+                });
+            }
+
+            // ── Temp vs Setpoint Timeline ─────────────────────────────
+            function renderTempVsSetpoint() {
+                const select = document.getElementById('zoneDetailSelect');
+                const vavId = parseInt(select.value) || 1;
+                const container = document.getElementById('tempVsSpChart');
+                const tooltip = document.getElementById('tempVsSpTooltip');
+                d3.select(container).selectAll('svg').remove();
+
+                const rect = container.getBoundingClientRect();
+                const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+                const width = rect.width - margin.left - margin.right;
+                const height = 280 - margin.top - margin.bottom;
+
+                const svg = d3.select(container).append('svg')
+                    .attr('width', rect.width).attr('height', 280);
+                const g = svg.append('g')
+                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+                // Build data arrays
+                const tempData = [], spData = [], deviationData = [];
+                for (let t = 0; t < INTERVALS_PER_DAY; t++) {
+                    const d = zoneData[vavId] && zoneData[vavId][t];
+                    if (d && d.SpaceTemp != null) {
+                        tempData.push({ t: t, val: d.SpaceTemp });
+                    }
+                    if (d && d.EffSP != null) {
+                        spData.push({ t: t, val: d.EffSP });
+                    }
+                    if (d && d.SpaceTemp != null && d.EffSP != null) {
+                        deviationData.push({ t: t, dev: d.SpaceTemp - d.EffSP });
+                    }
+                }
+
+                if (tempData.length === 0) {
+                    g.append('text').attr('x', width / 2).attr('y', height / 2)
+                        .attr('text-anchor', 'middle')
+                        .style('fill', 'var(--text-tertiary)').style('font-size', '14px')
+                        .text('No data for this zone');
+                    return;
+                }
+
+                const allVals = [...tempData.map(d => d.val), ...spData.map(d => d.val)];
+                const x = d3.scaleLinear().domain([0, 95]).range([0, width]);
+                const y = d3.scaleLinear()
+                    .domain([d3.min(allVals) - 3, d3.max(allVals) + 3])
+                    .range([height, 0]);
+
+                // Grid
+                g.append('g').attr('class', 'grid-lines')
+                    .selectAll('line').data(y.ticks(5)).enter().append('line')
+                    .attr('x1', 0).attr('x2', width)
+                    .attr('y1', d => y(d)).attr('y2', d => y(d));
+
+                // Comfort band (±tolerance from setpoint)
+                if (spData.length > 0) {
+                    const bandArea = d3.area()
+                        .x(d => x(d.t))
+                        .y0(d => y(d.val - COMFORT_TOLERANCE))
+                        .y1(d => y(d.val + COMFORT_TOLERANCE))
+                        .curve(d3.curveStepAfter);
+
+                    g.append('path').datum(spData)
+                        .attr('fill', 'rgba(0, 255, 136, 0.08)')
+                        .attr('d', bandArea);
+                }
+
+                // Setpoint line
+                const spLine = d3.line().x(d => x(d.t)).y(d => y(d.val)).curve(d3.curveStepAfter);
+                g.append('path').datum(spData)
+                    .attr('fill', 'none').attr('stroke', '#00ff88')
+                    .attr('stroke-width', 2).attr('stroke-dasharray', '6,4')
+                    .attr('d', spLine);
+
+                // Temp line
+                const tempLine = d3.line().x(d => x(d.t)).y(d => y(d.val)).curve(d3.curveMonotoneX);
+                g.append('path').datum(tempData)
+                    .attr('fill', 'none').attr('stroke', '#4ecdc4')
+                    .attr('stroke-width', 2.5)
+                    .attr('d', tempLine);
+
+                // Color deviations red/blue
+                deviationData.forEach(d => {
+                    if (Math.abs(d.dev) > COMFORT_TOLERANCE) {
+                        g.append('circle')
+                            .attr('cx', x(d.t))
+                            .attr('cy', y(zoneData[vavId][d.t].SpaceTemp))
+                            .attr('r', 3)
+                            .attr('fill', d.dev > 0 ? '#ff6b6b' : '#45b7d1')
+                            .attr('opacity', 0.7);
+                    }
+                });
+
+                // Axes
+                g.append('g').attr('class', 'axis')
+                    .attr('transform', 'translate(0,' + height + ')')
+                    .call(d3.axisBottom(x).ticks(12).tickFormat(d => timeIndexToLabel(d)));
+                g.append('g').attr('class', 'axis')
+                    .call(d3.axisLeft(y).ticks(6).tickFormat(d => d + '°F'));
+
+                // Legend
+                const leg = g.append('g').attr('transform', 'translate(' + (width - 200) + ',0)');
+                leg.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 6).attr('y2', 6)
+                    .attr('stroke', '#4ecdc4').attr('stroke-width', 2.5);
+                leg.append('text').attr('x', 26).attr('y', 10)
+                    .style('fill', 'var(--text-secondary)').style('font-size', '11px').text('Space Temp');
+                leg.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 24).attr('y2', 24)
+                    .attr('stroke', '#00ff88').attr('stroke-width', 2).attr('stroke-dasharray', '6,4');
+                leg.append('text').attr('x', 26).attr('y', 28)
+                    .style('fill', 'var(--text-secondary)').style('font-size', '11px').text('Setpoint');
+
+                // Hover
+                const hoverLine = g.append('line')
+                    .attr('stroke', 'var(--text-tertiary)').attr('stroke-dasharray', '4,4').style('opacity', 0);
+                g.append('rect').attr('width', width).attr('height', height).attr('fill', 'transparent')
+                    .on('mousemove', function(event) {
+                        const [mx] = d3.pointer(event);
+                        const tIdx = Math.round(x.invert(mx));
+                        if (tIdx < 0 || tIdx >= INTERVALS_PER_DAY) return;
+                        const d = zoneData[vavId] && zoneData[vavId][tIdx];
+                        if (!d || d.SpaceTemp == null) return;
+
+                        hoverLine.attr('x1', x(tIdx)).attr('x2', x(tIdx))
+                            .attr('y1', 0).attr('y2', height).style('opacity', 0.5);
+
+                        const dev = d.EffSP != null ? (d.SpaceTemp - d.EffSP).toFixed(1) : '--';
+                        const modeInfo = HVAC_MODES[d.HVACModeStatus] || { name: 'Unknown' };
+                        tooltip.innerHTML = '<strong>' + timeIndexToLabel(tIdx) + '</strong><br>' +
+                            'Temp: ' + d.SpaceTemp.toFixed(1) + '°F<br>' +
+                            'SP: ' + (d.EffSP != null ? d.EffSP.toFixed(1) + '°F' : '--') + '<br>' +
+                            'Dev: ' + dev + '°F<br>' +
+                            'Mode: ' + modeInfo.name;
+                        tooltip.classList.add('visible');
+                        const bounds = container.getBoundingClientRect();
+                        tooltip.style.left = (event.clientX - bounds.left + 12) + 'px';
+                        tooltip.style.top = (event.clientY - bounds.top - 70) + 'px';
+                    })
+                    .on('mouseleave', function() {
+                        hoverLine.style('opacity', 0);
+                        tooltip.classList.remove('visible');
+                    });
+            }
+
+            // ── Actuator Profile Chart ────────────────────────────────
+            function renderActuatorProfile() {
+                const select = document.getElementById('actuatorZoneSelect');
+                const vavId = parseInt(select.value) || 1;
+                const container = document.getElementById('actuatorChart');
+                const tooltip = document.getElementById('actuatorTooltip');
+                d3.select(container).selectAll('svg').remove();
+
+                const rect = container.getBoundingClientRect();
+                const margin = { top: 20, right: 120, bottom: 40, left: 60 };
+                const width = rect.width - margin.left - margin.right;
+                const height = 260 - margin.top - margin.bottom;
+
+                const svg = d3.select(container).append('svg')
+                    .attr('width', rect.width).attr('height', 260);
+                const g = svg.append('g')
+                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+                // Build data
+                const damperData = [], eh1Data = [], eh2Data = [], eh3Data = [], saData = [];
+                for (let t = 0; t < INTERVALS_PER_DAY; t++) {
+                    const d = zoneData[vavId] && zoneData[vavId][t];
+                    if (d) {
+                        if (d.DamperCmd != null) damperData.push({ t: t, val: d.DamperCmd });
+                        if (d.EH1_Cmd != null) eh1Data.push({ t: t, val: d.EH1_Cmd * 100 });
+                        if (d.EH2_Cmd != null) eh2Data.push({ t: t, val: d.EH2_Cmd * 100 });
+                        if (d.EH3_Cmd != null) eh3Data.push({ t: t, val: d.EH3_Cmd * 100 });
+                    }
+                    if (ahuData.saTemp[t] != null) {
+                        saData.push({ t: t, val: ahuData.saTemp[t] });
+                    }
+                }
+
+                if (damperData.length === 0) {
+                    g.append('text').attr('x', width / 2).attr('y', height / 2)
+                        .attr('text-anchor', 'middle')
+                        .style('fill', 'var(--text-tertiary)').style('font-size', '14px')
+                        .text('No data for this zone');
+                    return;
+                }
+
+                const x = d3.scaleLinear().domain([0, 95]).range([0, width]);
+                const yPct = d3.scaleLinear().domain([0, 100]).range([height, 0]);
+                const yTemp = d3.scaleLinear().domain([45, 75]).range([height, 0]); // SA temp range
+
+                // Grid
+                g.append('g').attr('class', 'grid-lines')
+                    .selectAll('line').data(yPct.ticks(5)).enter().append('line')
+                    .attr('x1', 0).attr('x2', width)
+                    .attr('y1', d => yPct(d)).attr('y2', d => yPct(d));
+
+                // Damper area
+                const damperArea = d3.area()
+                    .x(d => x(d.t)).y0(height).y1(d => yPct(d.val))
+                    .curve(d3.curveMonotoneX);
+                g.append('path').datum(damperData)
+                    .attr('fill', 'rgba(78, 205, 196, 0.15)')
+                    .attr('d', damperArea);
+                const damperLine = d3.line().x(d => x(d.t)).y(d => yPct(d.val)).curve(d3.curveMonotoneX);
+                g.append('path').datum(damperData)
+                    .attr('fill', 'none').attr('stroke', '#4ecdc4').attr('stroke-width', 2)
+                    .attr('d', damperLine);
+
+                // EH stages as stepped areas
+                const ehLine = d3.line().x(d => x(d.t)).y(d => yPct(d.val)).curve(d3.curveStepAfter);
+                if (eh1Data.length > 0) {
+                    g.append('path').datum(eh1Data)
+                        .attr('fill', 'none').attr('stroke', '#ff8c42')
+                        .attr('stroke-width', 1.5).attr('d', ehLine);
+                }
+                if (eh2Data.length > 0) {
+                    g.append('path').datum(eh2Data)
+                        .attr('fill', 'none').attr('stroke', '#ff6b6b')
+                        .attr('stroke-width', 1.5).attr('d', ehLine);
+                }
+                if (eh3Data.length > 0) {
+                    g.append('path').datum(eh3Data)
+                        .attr('fill', 'none').attr('stroke', '#e74c3c')
+                        .attr('stroke-width', 1.5).attr('d', ehLine);
+                }
+
+                // Supply air temp on secondary axis
+                if (saData.length > 0) {
+                    const saLine = d3.line().x(d => x(d.t)).y(d => yTemp(d.val)).curve(d3.curveMonotoneX);
+                    g.append('path').datum(saData)
+                        .attr('fill', 'none').attr('stroke', '#45b7d1')
+                        .attr('stroke-width', 1.5).attr('stroke-dasharray', '4,3')
+                        .attr('d', saLine);
+                }
+
+                // Axes
+                g.append('g').attr('class', 'axis')
+                    .attr('transform', 'translate(0,' + height + ')')
+                    .call(d3.axisBottom(x).ticks(12).tickFormat(d => timeIndexToLabel(d)));
+                g.append('g').attr('class', 'axis')
+                    .call(d3.axisLeft(yPct).ticks(5).tickFormat(d => d + '%'));
+
+                // Legend
+                const leg = svg.append('g')
+                    .attr('transform', 'translate(' + (margin.left + width + 12) + ',' + margin.top + ')');
+                const items = [
+                    { color: '#4ecdc4', label: 'Damper' },
+                    { color: '#ff8c42', label: 'EH1' },
+                    { color: '#ff6b6b', label: 'EH2' },
+                    { color: '#e74c3c', label: 'EH3' },
+                    { color: '#45b7d1', label: 'SA Temp' }
+                ];
+                items.forEach((item, i) => {
+                    const ly = i * 22;
+                    leg.append('line').attr('x1', 0).attr('x2', 16).attr('y1', ly + 6).attr('y2', ly + 6)
+                        .attr('stroke', item.color).attr('stroke-width', 2);
+                    leg.append('text').attr('x', 22).attr('y', ly + 10)
+                        .style('fill', 'var(--text-secondary)').style('font-size', '11px')
+                        .text(item.label);
+                });
+
+                // Hover
+                const hoverLine = g.append('line')
+                    .attr('stroke', 'var(--text-tertiary)').attr('stroke-dasharray', '4,4').style('opacity', 0);
+                g.append('rect').attr('width', width).attr('height', height).attr('fill', 'transparent')
+                    .on('mousemove', function(event) {
+                        const [mx] = d3.pointer(event);
+                        const tIdx = Math.round(x.invert(mx));
+                        if (tIdx < 0 || tIdx >= INTERVALS_PER_DAY) return;
+                        const d = zoneData[vavId] && zoneData[vavId][tIdx];
+                        if (!d) return;
+
+                        hoverLine.attr('x1', x(tIdx)).attr('x2', x(tIdx))
+                            .attr('y1', 0).attr('y2', height).style('opacity', 0.5);
+
+                        const sa = ahuData.saTemp[tIdx];
+                        tooltip.innerHTML = '<strong>' + timeIndexToLabel(tIdx) + '</strong><br>' +
+                            'Damper: ' + (d.DamperCmd != null ? d.DamperCmd.toFixed(0) + '%' : '--') + '<br>' +
+                            'EH1: ' + (d.EH1_Cmd != null ? (d.EH1_Cmd ? 'ON' : 'OFF') : '--') + '<br>' +
+                            'EH2: ' + (d.EH2_Cmd != null ? (d.EH2_Cmd ? 'ON' : 'OFF') : '--') + '<br>' +
+                            'EH3: ' + (d.EH3_Cmd != null ? (d.EH3_Cmd ? 'ON' : 'OFF') : '--') + '<br>' +
+                            'SA Temp: ' + (sa != null ? sa.toFixed(1) + '°F' : '--');
+                        tooltip.classList.add('visible');
+                        const bounds = container.getBoundingClientRect();
+                        tooltip.style.left = (event.clientX - bounds.left + 12) + 'px';
+                        tooltip.style.top = (event.clientY - bounds.top - 80) + 'px';
+                    })
+                    .on('mouseleave', function() {
+                        hoverLine.style('opacity', 0);
+                        tooltip.classList.remove('visible');
+                    });
+            }
+
+            // ── Populate Zone Selectors ────────────────────────────────
+            function populateZoneSelects() {
+                const selects = [
+                    document.getElementById('zoneDetailSelect'),
+                    document.getElementById('actuatorZoneSelect')
+                ];
+                selects.forEach(sel => {
+                    sel.innerHTML = '';
+                    for (let v = 1; v <= NUM_VAVS; v++) {
+                        const opt = document.createElement('option');
+                        opt.value = v;
+                        opt.textContent = 'VAV-' + v.toString().padStart(2, '0') + ' — ' + ZONE_NAMES[v - 1];
+                        sel.appendChild(opt);
+                    }
+                    sel.addEventListener('change', () => {
+                        if (sel === selects[0]) renderTempVsSetpoint();
+                        else renderActuatorProfile();
+                    });
+                });
+            }
+
+            // ── Date Navigation ───────────────────────────────────────
+            document.getElementById('prevDay').addEventListener('click', () => {
+                selectedDate.setDate(selectedDate.getDate() - 1);
+                updateDateLabel(); loadAllData();
+            });
+            document.getElementById('nextDay').addEventListener('click', () => {
+                const today = new Date(); today.setHours(0,0,0,0);
+                if (selectedDate < today) {
+                    selectedDate.setDate(selectedDate.getDate() + 1);
+                    updateDateLabel(); loadAllData();
+                }
+            });
+            document.getElementById('todayBtn').addEventListener('click', () => {
+                selectedDate = new Date(); selectedDate.setHours(0,0,0,0);
+                updateDateLabel(); loadAllData();
+            });
+            document.getElementById('datePicker').addEventListener('change', function() {
+                const parts = this.value.split('-');
+                selectedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                updateDateLabel(); loadAllData();
+            });
+
+            // Resize handler
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => calculateAndRender(), 250);
+            });
+
+            // ── Init ──────────────────────────────────────────────────
+            function init() {
+                setStatus('Connecting to Niagara...');
+                populateZoneSelects();
+                updateDateLabel();
+                loadAllData();
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>

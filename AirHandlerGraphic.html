@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AHU-01 - Building Control System</title>
+    <script type='text/javascript' src='/requirejs/config.js'></script>
+    <script type='text/javascript' src='/module/js/com/tridium/js/ext/require/require.min.js'></script>
+    
+    <style>
+        :root {
+            /* Light theme - Industrial minimal aesthetic */
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f7;
+            --bg-quaternary: #f0f0f3;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #6e6e73;
+            --accent-primary: #007aff;
+            --accent-secondary: #34c759;
+            --accent-warning: #ff9500;
+            --accent-error: #ff3b30;
+            --border-light: #d2d2d7;
+            --border-medium: #c6c6cc;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.1);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.15);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        body.dark-mode {
+            /* Dark theme - Premium tech aesthetic */
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --bg-quaternary: #3a3a3c;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --text-tertiary: #8e8e93;
+            --accent-primary: #0a84ff;
+            --accent-secondary: #32d74b;
+            --accent-warning: #ff9f0a;
+            --accent-error: #ff453a;
+            --border-light: #38383a;
+            --border-medium: #48484a;
+            --shadow-light: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-medium: 0 4px 16px rgba(0,0,0,0.3);
+            --shadow-heavy: 0 8px 32px rgba(0,0,0,0.4);
+            --glass-bg: rgba(0, 0, 0, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 50px;
+            height: 28px;
+            background: var(--border-medium);
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            width: 20px;
+            height: 20px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        body.dark-mode .theme-toggle::before {
+            content: '';
+            transform: translateX(22px);
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 7px;
+            top: 7px;
+            width: 14px;
+            height: 14px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 1;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 0;
+        }
+        body.dark-mode .theme-toggle .icon-sun { opacity: 0; transform: translateX(22px); }
+        body.dark-mode .theme-toggle .icon-moon { opacity: 1; transform: translateX(22px); }
+
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-light);
+            padding: 24px 40px;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: "SF Mono", "Consolas", "Roboto Mono", monospace;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            padding: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* AHU Diagram Container */
+        .ahu-diagram-container {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow-heavy);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ahu-diagram {
+            position: relative;
+            width: 1200px;
+            height: 1080px;
+            margin: 0 auto;
+            background: black url('/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Trane_CC_Type2_Occ.png') 45px 240px/972px 800px no-repeat;
+            border-radius: 12px;
+        }
+
+        /* Animation classes */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .slide-up {
+            opacity: 0;
+            transform: translateY(40px);
+            animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        .stagger-5 { animation-delay: 0.5s; }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(40px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        /* Make sure cards animate on load */
+        .data-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .data-card:nth-child(1) { animation-delay: 0.1s; }
+        .data-card:nth-child(2) { animation-delay: 0.2s; }
+        .data-card:nth-child(3) { animation-delay: 0.3s; }
+        .data-card:nth-child(4) { animation-delay: 0.4s; }
+
+        .equipment-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .equipment-card:nth-child(1) { animation-delay: 0.2s; }
+        .equipment-card:nth-child(2) { animation-delay: 0.3s; }
+        .equipment-card:nth-child(3) { animation-delay: 0.4s; }
+        .equipment-card:nth-child(4) { animation-delay: 0.5s; }
+
+        /* Control Panel Styles */
+        .control-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-medium);
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .control-item {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .control-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .control-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: "SF Mono", "Consolas", monospace;
+        }
+
+        .control-inputs {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-input {
+            padding: 6px 10px;
+            border: 1px solid var(--border-medium);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            width: 80px;
+        }
+
+        .control-select {
+            padding: 6px 10px;
+            border: 1px solid var(--border-medium);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            min-width: 120px;
+        }
+
+        .control-button {
+            padding: 6px 14px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .control-button:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-1px);
+        }
+
+        .control-button.release {
+            background: var(--accent-error);
+        }
+
+        .control-button.release:hover {
+            background: #d32f2f;
+        }
+
+        .override-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-error);
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .override-indicator.active {
+            opacity: 1;
+        }
+
+        /* Data Cards Grid */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .data-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-medium);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .data-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-right: 12px;
+            box-shadow: var(--shadow-light);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .data-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            font-family: "SF Mono", "Consolas", monospace;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+
+        .status-online { background: var(--accent-secondary); }
+        .status-warning { background: var(--accent-warning); }
+        .status-error { background: var(--accent-error); }
+
+        /* Equipment Status Cards */
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .equipment-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow-medium);
+            border-left: 4px solid var(--accent-primary);
+            transition: all 0.3s ease;
+        }
+
+        .equipment-card:hover {
+            transform: translateY(-2px);
+            border-left-color: var(--accent-secondary);
+        }
+
+        .equipment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .equipment-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .equipment-status {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        .status-inactive {
+            background: var(--text-tertiary);
+            color: white;
+        }
+
+        .equipment-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: "SF Mono", "Consolas", monospace;
+            margin-bottom: 8px;
+        }
+
+        .equipment-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Section Headers */
+        .section-header {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            padding-left: 16px;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .data-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .equipment-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .ahu-diagram-container {
+                padding: 20px;
+            }
+
+            .diagram-overlay {
+                height: 400px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-shimmer {
+            background: linear-gradient(90deg, 
+                var(--bg-tertiary) 0%, 
+                var(--bg-quaternary) 50%, 
+                var(--bg-tertiary) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Visual Enhancements */
+        .data-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 16px 16px 0 0;
+        }
+
+        .equipment-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+
+    <!-- Header -->
+    <header class="header">
+        <h1 id="ahu-name">AHU-01</h1>
+        <p>Air Handling Unit - Real-time Control Dashboard</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- AHU Diagram -->
+        <div class="ahu-diagram-container fade-in">
+            <div class="ahu-diagram">
+                <!-- Positioned image overlays - exact XML coordinates, no scaling -->
+                <!-- Supply Fan: XML layout="603.0,605.0,181.0,137.0" -->
+                <img id="img-fan" src="" alt="Supply Fan" style="position: absolute; top: 605px; left: 603px; width: 181px; height: 137px; pointer-events: none; opacity: 0;">
+                
+                <!-- CHW Coil: XML layout="413.0,531.0,275.0,364.0" -->
+                <img id="img-chw-coil" src="/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/CHW_Coil/Cool_ON_0000.png" alt="CHW Coil" style="position: absolute; top: 531px; left: 413px; width: 275px; height: 364px; pointer-events: none;">
+                
+                <!-- HW Coil: XML layout="315.0,511.0,275.0,364.0" -->
+                <img id="img-hw-coil" src="/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/HW_Coil/Heat_ON_0000.png" alt="HW Coil" style="position: absolute; top: 511px; left: 315px; width: 275px; height: 364px; pointer-events: none;">
+                
+                <!-- OA Damper: XML layout="365.0,280.0,205.0,120.0" -->
+                <img id="img-oa-damper" src="/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Left_Dampers/Left_Damper_0000.png" alt="OA Damper" style="position: absolute; top: 280px; left: 365px; width: 205px; height: 120px; pointer-events: none;">
+                
+                <!-- RA Damper: XML layout="750.0,329.0,205.0,120.0" -->
+                <img id="img-ra-damper" src="/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/Right_Damper_0100.png" alt="RA Damper" style="position: absolute; top: 329px; left: 750px; width: 205px; height: 120px; pointer-events: none;">
+            </div>
+        </div>
+
+        <!-- Equipment Controls -->
+        <div class="control-section slide-up stagger-1">
+            <h2 class="section-header">Equipment Controls</h2>
+            <div class="control-grid">
+                <!-- Occupancy Command -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Occupancy Command</span>
+                        <span class="override-indicator" id="occ-cmd-override"></span>
+                    </div>
+                    <div class="control-value" id="occ-cmd-display">Loading...</div>
+                    <div class="control-inputs">
+                        <select class="control-select" id="occ-cmd-input">
+                            <option value="true">Occupied</option>
+                            <option value="false">Unoccupied</option>
+                        </select>
+                        <select class="control-select" id="occ-cmd-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideOccCmd()">Override</button>
+                        <button class="control-button release" onclick="releaseOccCmd()">Release</button>
+                    </div>
+                </div>
+
+                <!-- OA Damper -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">OA Damper Position</span>
+                        <span class="override-indicator" id="oa-damper-override"></span>
+                    </div>
+                    <div class="control-value" id="oa-damper-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="oa-damper-input" placeholder="%" min="0" max="100">
+                        <select class="control-select" id="oa-damper-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideOaDamper()">Override</button>
+                        <button class="control-button release" onclick="releaseOaDamper()">Release</button>
+                    </div>
+                </div>
+
+                <!-- Supply Fan -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Supply Fan</span>
+                        <span class="override-indicator" id="fan-override"></span>
+                    </div>
+                    <div class="control-value" id="fan-display">Loading...</div>
+                    <div class="control-inputs">
+                        <select class="control-select" id="fan-input">
+                            <option value="true">On</option>
+                            <option value="false">Off</option>
+                        </select>
+                        <select class="control-select" id="fan-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideFan()">Override</button>
+                        <button class="control-button release" onclick="releaseFan()">Release</button>
+                    </div>
+                </div>
+
+                <!-- VFD Speed -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">VFD Speed</span>
+                        <span class="override-indicator" id="vfd-override"></span>
+                    </div>
+                    <div class="control-value" id="vfd-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="vfd-input" placeholder="%" min="0" max="100">
+                        <select class="control-select" id="vfd-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideVfd()">Override</button>
+                        <button class="control-button release" onclick="releaseVfd()">Release</button>
+                    </div>
+                </div>
+
+                <!-- CHW Valve -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Chilled Water Valve</span>
+                        <span class="override-indicator" id="chw-override"></span>
+                    </div>
+                    <div class="control-value" id="chw-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="chw-input" placeholder="%" min="0" max="100">
+                        <select class="control-select" id="chw-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideChw()">Override</button>
+                        <button class="control-button release" onclick="releaseChw()">Release</button>
+                    </div>
+                </div>
+
+                <!-- HW Valve -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Hot Water Valve</span>
+                        <span class="override-indicator" id="hw-override"></span>
+                    </div>
+                    <div class="control-value" id="hw-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="hw-input" placeholder="%" min="0" max="100">
+                        <select class="control-select" id="hw-duration" style="width: 100px;">
+                            <option value="permanent">Permanent</option>
+                            <option value="60">1 min</option>
+                            <option value="900">15 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">1 hr</option>
+                            <option value="7200">2 hrs</option>
+                        </select>
+                        <button class="control-button" onclick="overrideHw()">Override</button>
+                        <button class="control-button release" onclick="releaseHw()">Release</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setpoint Controls -->
+        <div class="control-section slide-up stagger-2">
+            <h2 class="section-header">Setpoint Controls</h2>
+            <div class="control-grid">
+                <!-- SA Temp Setpoint -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Supply Air Temp SP</span>
+                    </div>
+                    <div class="control-value" id="sa-temp-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="sa-temp-sp-input" placeholder="°F" step="0.1">
+                        <button class="control-button" onclick="setSaTempSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- SA Static Setpoint -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Supply Air Static SP</span>
+                    </div>
+                    <div class="control-value" id="sa-static-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="sa-static-sp-input" placeholder="in" step="0.01">
+                        <button class="control-button" onclick="setSaStaticSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- MA Temp Setpoint -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">Mixed Air Temp SP</span>
+                    </div>
+                    <div class="control-value" id="ma-temp-sp-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="ma-temp-sp-input" placeholder="°F" step="0.1">
+                        <button class="control-button" onclick="setMaTempSp()">Set</button>
+                    </div>
+                </div>
+
+                <!-- OA Min Position -->
+                <div class="control-item">
+                    <div class="control-header">
+                        <span class="control-label">OA Minimum Position</span>
+                    </div>
+                    <div class="control-value" id="oa-min-pos-display">Loading...</div>
+                    <div class="control-inputs">
+                        <input type="number" class="control-input" id="oa-min-pos-input" placeholder="%" min="0" max="100">
+                        <button class="control-button" onclick="setOaMinPos()">Set</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unit Settings -->
+        <h2 class="section-header slide-up">Unit Settings</h2>
+        <div class="data-grid slide-up stagger-3">
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg></div>
+                    <div class="card-title">Control Settings</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Occupied Command</span>
+                    <span class="data-value" id="occ-cmd">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">SA Temp Setpoint</span>
+                    <span class="data-value" id="sa-temp-sp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">SA Static Setpoint</span>
+                    <span class="data-value" id="sa-static-sp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">MA Temp Setpoint</span>
+                    <span class="data-value" id="ma-temp-sp">Loading...</span>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z"/></svg></div>
+                    <div class="card-title">Economizer Settings</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">OA Enthalpy Setpoint</span>
+                    <span class="data-value" id="oa-enth-sp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">OA Temp Setpoint</span>
+                    <span class="data-value" id="oat-sp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Economizer Mode</span>
+                    <span class="data-value" id="econ-mode">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">OA Minimum Position</span>
+                    <span class="data-value" id="oa-min-pos">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Air Data -->
+        <h2 class="section-header slide-up stagger-1">Air Data Monitoring</h2>
+        <div class="data-grid slide-up stagger-4">
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M4,10A1,1 0 0,1 3,9A1,1 0 0,1 4,8H12A2,2 0 0,0 14,6A2,2 0 0,0 12,4C11.45,4 10.95,4.22 10.59,4.59C10.2,5 9.56,5 9.17,4.59C8.78,4.2 8.78,3.56 9.17,3.17C9.9,2.45 10.9,2 12,2A4,4 0 0,1 16,6A4,4 0 0,1 12,10H4M19,12A1,1 0 0,0 20,11A1,1 0 0,0 19,10C18.72,10 18.47,10.11 18.29,10.29C17.9,10.68 17.27,10.68 16.88,10.29C16.5,9.9 16.5,9.27 16.88,8.88C17.42,8.34 18.17,8 19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14H5A1,1 0 0,1 4,13A1,1 0 0,1 5,12H19M18,18H4A1,1 0 0,1 3,17A1,1 0 0,1 4,16H18A3,3 0 0,1 21,19A3,3 0 0,1 18,22C17.17,22 16.42,21.66 15.88,21.12C15.5,20.73 15.5,20.1 15.88,19.71C16.27,19.32 16.9,19.32 17.29,19.71C17.47,19.89 17.72,20 18,20A1,1 0 0,0 19,19A1,1 0 0,0 18,18Z"/></svg></div>
+                    <div class="card-title">Outside Air Data</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Temperature</span>
+                    <span class="data-value" id="oa-temp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Humidity</span>
+                    <span class="data-value" id="oa-humidity">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Enthalpy</span>
+                    <span class="data-value" id="oa-enthalpy">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Damper Position</span>
+                    <span class="data-value" id="oa-damper">Loading...</span>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg></div>
+                    <div class="card-title">Return Air Data</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Temperature</span>
+                    <span class="data-value" id="ra-temp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Humidity</span>
+                    <span class="data-value" id="ra-humidity">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Enthalpy</span>
+                    <span class="data-value" id="ra-enthalpy">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Damper Position</span>
+                    <span class="data-value" id="ra-damper">Loading...</span>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M20,12H22V14H20C18.62,14 17.26,13.65 16,13C13.5,14.3 10.5,14.3 8,13C6.74,13.65 5.37,14 4,14H2V12H4C5.39,12 6.78,11.53 8,10.67C10.44,12.38 13.56,12.38 16,10.67C17.22,11.53 18.61,12 20,12M20,6H22V8H20C18.62,8 17.26,7.65 16,7C13.5,8.3 10.5,8.3 8,7C6.74,7.65 5.37,8 4,8H2V6H4C5.39,6 6.78,5.53 8,4.67C10.44,6.38 13.56,6.38 16,4.67C17.22,5.53 18.61,6 20,6M20,18H22V20H20C18.62,20 17.26,19.65 16,19C13.5,20.3 10.5,20.3 8,19C6.74,19.65 5.37,20 4,20H2V18H4C5.39,18 6.78,17.53 8,16.67C10.44,18.38 13.56,18.38 16,16.67C17.22,17.53 18.61,18 20,18Z"/></svg></div>
+                    <div class="card-title">Mixed Air Data</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Temperature</span>
+                    <span class="data-value" id="ma-temp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Static Pressure</span>
+                    <span class="data-value" id="ma-static">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Enthalpy</span>
+                    <span class="data-value" id="ma-enthalpy">Loading...</span>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"/></svg></div>
+                    <div class="card-title">Supply Air Data</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Temperature</span>
+                    <span class="data-value" id="sa-temp">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Static Pressure</span>
+                    <span class="data-value" id="sa-static">Loading...</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Enthalpy</span>
+                    <span class="data-value" id="sa-enthalpy">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipment Status -->
+        <h2 class="section-header slide-up stagger-2">Equipment Status</h2>
+        <div class="equipment-grid slide-up stagger-5">
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <span class="equipment-name">Supply Fan</span>
+                    <span class="equipment-status status-active" id="fan-status">ACTIVE</span>
+                </div>
+                <div class="equipment-value" id="fan-command">Loading...</div>
+                <div class="equipment-description">Fan Command Status</div>
+            </div>
+
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <span class="equipment-name">VFD Speed</span>
+                    <span class="equipment-status status-active" id="vfd-status">ACTIVE</span>
+                </div>
+                <div class="equipment-value" id="vfd-speed">Loading...</div>
+                <div class="equipment-description">Variable Frequency Drive</div>
+            </div>
+
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <span class="equipment-name">CHW Valve</span>
+                    <span class="equipment-status status-inactive" id="chw-status">INACTIVE</span>
+                </div>
+                <div class="equipment-value" id="chw-valve">Loading...</div>
+                <div class="equipment-description">Chilled Water Cooling</div>
+            </div>
+
+            <div class="equipment-card">
+                <div class="equipment-header">
+                    <span class="equipment-name">HW Valve</span>
+                    <span class="equipment-status status-inactive" id="hw-status">INACTIVE</span>
+                </div>
+                <div class="equipment-value" id="hw-valve">Loading...</div>
+                <div class="equipment-description">Hot Water Heating</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Management
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        // Initialize theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-mode');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const currentTheme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+        });
+
+        // Niagara Integration
+        require(['baja!'], function (baja) {
+            'use strict';
+            
+            const subscriber = new baja.Subscriber();
+            
+            // Point mappings  
+            const pointMappings = {
+                // Unit name
+                'ahu-name': 'station:|slot:/AHU01',
+                
+                // Unit Settings
+                'occ-cmd': 'station:|slot:/AHU01/NetworkSettings/OccCmd',
+                'occ-cmd-display': 'station:|slot:/AHU01/NetworkSettings/OccCmd',
+                'sa-temp-sp': 'station:|slot:/AHU01/NetworkSettings/SaTempSetpt',
+                'sa-temp-sp-display': 'station:|slot:/AHU01/NetworkSettings/SaTempSetpt',
+                'sa-static-sp': 'station:|slot:/AHU01/NetworkSettings/SaStaticSetpt',
+                'sa-static-sp-display': 'station:|slot:/AHU01/NetworkSettings/SaStaticSetpt',
+                'ma-temp-sp': 'station:|slot:/AHU01/NetworkSettings/MaTempSetpt',
+                'ma-temp-sp-display': 'station:|slot:/AHU01/NetworkSettings/MaTempSetpt',
+                'oa-enth-sp': 'station:|slot:/AHU01/NetworkSettings/OaEnthalpySetpt',
+                'oat-sp': 'station:|slot:/AHU01/NetworkSettings/OatSetpt',
+                'econ-mode': 'station:|slot:/AHU01/NetworkSettings/Economizer',
+                'oa-min-pos': 'station:|slot:/AHU01/NetworkSettings/OadMinPosSetpt',
+                'oa-min-pos-display': 'station:|slot:/AHU01/NetworkSettings/OadMinPosSetpt',
+                
+                // Air Data
+                'oa-temp': 'station:|slot:/AHU01/Inputs/OaTemp',
+                'oa-humidity': 'station:|slot:/AHU01/Inputs/OaHumidity',
+                'oa-enthalpy': 'station:|slot:/AHU01/NetworkSettings/OaEnth',
+                'oa-damper': 'station:|slot:/AHU01/Outputs/EconDamperCmd',
+                'oa-damper-display': 'station:|slot:/AHU01/Outputs/EconDamperCmd',
+                'ra-temp': 'station:|slot:/AHU01/Inputs/RaTemp',
+                'ra-humidity': 'station:|slot:/AHU01/Inputs/RaHumidity',
+                'ra-enthalpy': 'station:|slot:/AHU01/NetworkSettings/RaEnth',
+                'ra-damper': 'station:|slot:/AHU01/Outputs/RaDamperCmd',
+                'ma-temp': 'station:|slot:/AHU01/Inputs/SaTemp',
+                'ma-static': 'station:|slot:/AHU01/Inputs/SaStatic',
+                'ma-enthalpy': 'station:|slot:/AHU01/NetworkSettings/RaEnth',
+                'sa-temp': 'station:|slot:/AHU01/Inputs/SaTemp',
+                'sa-static': 'station:|slot:/AHU01/Inputs/SaStatic',
+                'sa-enthalpy': 'station:|slot:/AHU01/NetworkSettings/RaEnth',
+                
+                // Equipment
+                'fan-command': 'station:|slot:/AHU01/Outputs/FanCmd',
+                'fan-display': 'station:|slot:/AHU01/Outputs/FanCmd',
+                'vfd-speed': 'station:|slot:/AHU01/Outputs/SaFanVfdCmd',
+                'vfd-display': 'station:|slot:/AHU01/Outputs/SaFanVfdCmd',
+                'chw-valve': 'station:|slot:/AHU01/Outputs/ChwValveCmd',
+                'chw-display': 'station:|slot:/AHU01/Outputs/ChwValveCmd',
+                'hw-valve': 'station:|slot:/AHU01/Outputs/HwValveCmd',
+                'hw-display': 'station:|slot:/AHU01/Outputs/HwValveCmd'
+            };
+
+            // Store point references for control operations
+            const pointObjects = new Map();
+            
+            // Connect to points and update display
+            Object.entries(pointMappings).forEach(([elementId, ord]) => {
+                baja.Ord.make(ord).get({ subscriber: subscriber })
+                    .then(point => {
+                        pointObjects.set(ord, point);
+                        updateElement(elementId, point, ord);
+                        
+                        // Subscribe to changes
+                        subscriber.attach('changed', function(prop) {
+                            if (prop.getName() === 'out' && this === point) {
+                                updateElement(elementId, this, ord);
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error(`Error connecting to ${ord}:`, error);
+                        const element = document.getElementById(elementId);
+                        if (element) {
+                            element.textContent = 'Error';
+                            element.style.color = 'var(--accent-error)';
+                        }
+                    });
+            });
+            
+            function updateElement(elementId, point, ord) {
+                const element = document.getElementById(elementId);
+                if (!element) return;
+                
+                try {
+                    if (elementId === 'ahu-name') {
+                        element.textContent = point.getDisplayName() || 'AHU-01';
+                    } else {
+                        const value = point.getOut().getValueDisplay();
+                        const numericValue = point.getOut().getValue();
+                        element.textContent = value;
+                        
+                        // Check override status
+                        checkOverrideStatus(point, ord, elementId);
+                        
+                        // Update equipment status indicators AND actual visual animations
+                        if (elementId === 'fan-command' || elementId === 'fan-display') {
+                            updateEquipmentStatus('fan-status', numericValue > 0);
+                            updateFanGraphic(numericValue > 0);
+                        } else if (elementId === 'chw-valve' || elementId === 'chw-display') {
+                            updateEquipmentStatus('chw-status', numericValue > 0);
+                            updateChwCoilGraphic(numericValue);
+                        } else if (elementId === 'hw-valve' || elementId === 'hw-display') {
+                            updateEquipmentStatus('hw-status', numericValue > 0);
+                            updateHwCoilGraphic(numericValue);
+                        } else if (elementId === 'vfd-speed' || elementId === 'vfd-display') {
+                            updateEquipmentStatus('vfd-status', numericValue > 0);
+                            // VFD speed could affect fan visual too
+                            console.log(`VFD Speed: ${Math.round(numericValue)}%`);
+                        } else if (elementId === 'oa-damper' || elementId === 'oa-damper-display') {
+                            updateOaDamperGraphic(numericValue);
+                            // Also update RA damper with inverse logic using same OA value
+                            updateRaDamperGraphic(numericValue);
+                        } else if (elementId === 'ra-damper') {
+                            // RA damper display value only - actual graphic is updated by OA damper above
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error updating ${elementId}:`, error);
+                    element.textContent = 'Error';
+                }
+            }
+            
+            function checkOverrideStatus(point, ord, elementId) {
+                try {
+                    let isOverridden = false;
+                    
+                    if (point && typeof point.getStatus === 'function') {
+                        const status = point.getStatus();
+                        if (status) {
+                            const statusStr = status.toString().toLowerCase();
+                            isOverridden = statusStr.includes('overridden') || statusStr.includes('override') || statusStr.includes('manual');
+                        }
+                    }
+                    
+                    // Update override indicators
+                    const indicatorMap = {
+                        'occ-cmd-display': 'occ-cmd-override',
+                        'oa-damper-display': 'oa-damper-override',
+                        'fan-display': 'fan-override',
+                        'vfd-display': 'vfd-override',
+                        'chw-display': 'chw-override',
+                        'hw-display': 'hw-override'
+                    };
+                    
+                    const indicatorId = indicatorMap[elementId];
+                    if (indicatorId) {
+                        const indicator = document.getElementById(indicatorId);
+                        if (indicator) {
+                            indicator.classList.toggle('active', isOverridden);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking override status:', error);
+                }
+            }
+            
+            function updateEquipmentStatus(statusId, isActive) {
+                const statusElement = document.getElementById(statusId);
+                if (!statusElement) return;
+                
+                if (isActive) {
+                    statusElement.textContent = 'ACTIVE';
+                    statusElement.className = 'equipment-status status-active';
+                } else {
+                    statusElement.textContent = 'INACTIVE';
+                    statusElement.className = 'equipment-status status-inactive';
+                }
+            }
+            
+            // Helper function to get duration from dropdown
+            function getDurationInSeconds(controlId) {
+                const durationSelect = document.getElementById(`${controlId}-duration`);
+                if (!durationSelect) return null;
+                
+                const selectedValue = durationSelect.value;
+                return selectedValue === 'permanent' ? null : parseInt(selectedValue);
+            }
+            
+            // Override Functions with Duration Support
+            window.overrideOccCmd = function() {
+                const input = document.getElementById('occ-cmd-input');
+                const value = input.value === 'true';
+                const duration = getDurationInSeconds('occ-cmd');
+                const point = pointObjects.get('station:|slot:/AHU01/NetworkSettings/OccCmd');
+                
+                if (point) {
+                    const slotName = value ? 'active' : 'inactive';
+                    const override = baja.$("control:Override");
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: slotName, value: override })
+                        .then(() => console.log('Occ command override successful'))
+                        .catch(error => {
+                            console.error('Occ command override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideOaDamper = function() {
+                const input = document.getElementById('oa-damper-input');
+                const value = parseFloat(input.value);
+                const duration = getDurationInSeconds('oa-damper');
+                
+                if (isNaN(value) || value < 0 || value > 100) {
+                    alert('Please enter a valid percentage (0-100)');
+                    return;
+                }
+                
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/EconDamperCmd');
+                if (point) {
+                    const override = baja.$("control:NumericOverride", { value: value });
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: 'override', value: override })
+                        .then(() => {
+                            console.log('OA damper override successful');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('OA damper override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideFan = function() {
+                const input = document.getElementById('fan-input');
+                const value = input.value === 'true';
+                const duration = getDurationInSeconds('fan');
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/FanCmd');
+                
+                if (point) {
+                    const slotName = value ? 'active' : 'inactive';
+                    const override = baja.$("control:Override");
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: slotName, value: override })
+                        .then(() => console.log('Fan override successful'))
+                        .catch(error => {
+                            console.error('Fan override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideVfd = function() {
+                const input = document.getElementById('vfd-input');
+                const value = parseFloat(input.value);
+                const duration = getDurationInSeconds('vfd');
+                
+                if (isNaN(value) || value < 0 || value > 100) {
+                    alert('Please enter a valid percentage (0-100)');
+                    return;
+                }
+                
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/SaFanVfdCmd');
+                if (point) {
+                    const override = baja.$("control:NumericOverride", { value: value });
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: 'override', value: override })
+                        .then(() => {
+                            console.log('VFD override successful');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('VFD override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideChw = function() {
+                const input = document.getElementById('chw-input');
+                const value = parseFloat(input.value);
+                const duration = getDurationInSeconds('chw');
+                
+                if (isNaN(value) || value < 0 || value > 100) {
+                    alert('Please enter a valid percentage (0-100)');
+                    return;
+                }
+                
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/ChwValveCmd');
+                if (point) {
+                    const override = baja.$("control:NumericOverride", { value: value });
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: 'override', value: override })
+                        .then(() => {
+                            console.log('CHW valve override successful');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('CHW valve override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            window.overrideHw = function() {
+                const input = document.getElementById('hw-input');
+                const value = parseFloat(input.value);
+                const duration = getDurationInSeconds('hw');
+                
+                if (isNaN(value) || value < 0 || value > 100) {
+                    alert('Please enter a valid percentage (0-100)');
+                    return;
+                }
+                
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/HwValveCmd');
+                if (point) {
+                    const override = baja.$("control:NumericOverride", { value: value });
+                    
+                    if (duration !== null) {
+                        override.setDuration(baja.RelTime.make({ seconds: duration }));
+                    }
+                    
+                    point.invoke({ slot: 'override', value: override })
+                        .then(() => {
+                            console.log('HW valve override successful');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('HW valve override failed:', error);
+                            alert('Override failed: ' + error);
+                        });
+                }
+            };
+            
+            // Release Functions
+            window.releaseOccCmd = function() {
+                const point = pointObjects.get('station:|slot:/AHU01/NetworkSettings/OccCmd');
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('Occ command release successful');
+                            // Update UI
+                            const indicator = document.getElementById('occ-cmd-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('Occ command release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseOaDamper = function() {
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/EconDamperCmd');
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('OA damper release successful');
+                            const indicator = document.getElementById('oa-damper-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('OA damper release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseFan = function() {
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/FanCmd');
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('Fan release successful');
+                            const indicator = document.getElementById('fan-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('Fan release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseVfd = function() {
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/SaFanVfdCmd');
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('VFD release successful');
+                            const indicator = document.getElementById('vfd-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('VFD release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseChw = function() {
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/ChwValveCmd');
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('CHW valve release successful');
+                            const indicator = document.getElementById('chw-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('CHW valve release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            window.releaseHw = function() {
+                const point = pointObjects.get('station:|slot:/AHU01/Outputs/HwValveCmd');
+                if (point) {
+                    point.invoke({ slot: 'auto' })
+                        .then(() => {
+                            console.log('HW valve release successful');
+                            const indicator = document.getElementById('hw-override');
+                            if (indicator) indicator.classList.remove('active');
+                        })
+                        .catch(error => {
+                            console.error('HW valve release failed:', error);
+                            alert('Release failed: ' + error);
+                        });
+                }
+            };
+            
+            // Setpoint Functions
+            window.setSaTempSp = function() {
+                const input = document.getElementById('sa-temp-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid temperature');
+                    return;
+                }
+                
+                const point = pointObjects.get('station:|slot:/AHU01/NetworkSettings/SaTempSetpt');
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('SA temp setpoint set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('SA temp setpoint failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setSaStaticSp = function() {
+                const input = document.getElementById('sa-static-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid pressure');
+                    return;
+                }
+                
+                const point = pointObjects.get('station:|slot:/AHU01/NetworkSettings/SaStaticSetpt');
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('SA static setpoint set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('SA static setpoint failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setMaTempSp = function() {
+                const input = document.getElementById('ma-temp-sp-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert('Please enter a valid temperature');
+                    return;
+                }
+                
+                const point = pointObjects.get('station:|slot:/AHU01/NetworkSettings/MaTempSetpt');
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('MA temp setpoint set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('MA temp setpoint failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            window.setOaMinPos = function() {
+                const input = document.getElementById('oa-min-pos-input');
+                const value = parseFloat(input.value);
+                if (isNaN(value) || value < 0 || value > 100) {
+                    alert('Please enter a valid percentage (0-100)');
+                    return;
+                }
+                
+                const point = pointObjects.get('station:|slot:/AHU01/NetworkSettings/OadMinPosSetpt');
+                if (point) {
+                    point.getFallback().setValue(value)
+                        .then(() => {
+                            console.log('OA min position set successfully');
+                            input.value = '';
+                        })
+                        .catch(error => {
+                            console.error('OA min position failed:', error);
+                            alert('Set failed: ' + error);
+                        });
+                }
+            };
+            
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', function() {
+                if (subscriber) subscriber.unsubscribeAll();
+            });
+        });
+        
+        // Visual Animation Functions (using positioned img elements)
+        function updateFanGraphic(isOn) {
+            const fanImg = document.getElementById('img-fan');
+            if (fanImg) {
+                if (isOn) {
+                    fanImg.src = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/SFan_ON.gif';
+                    fanImg.style.opacity = '1';
+                } else {
+                    fanImg.src = '';
+                    fanImg.style.opacity = '0';
+                }
+                console.log(`Fan image updated: ${isOn ? 'SFan_ON.gif' : 'Hidden'}`);
+            }
+        }
+
+        function updateOaDamperGraphic(pointValue) {
+            const damperImg = document.getElementById('img-oa-damper');
+            if (damperImg) {
+                let imageName;
+                if (pointValue >= 90.0) imageName = 'Left_Damper_0100.png';
+                else if (pointValue >= 80.0) imageName = 'Left_Damper_0090.png';
+                else if (pointValue >= 70.0) imageName = 'Left_Damper_0080.png';
+                else if (pointValue >= 60.0) imageName = 'Left_Damper_0070.png';
+                else if (pointValue >= 50.0) imageName = 'Left_Damper_0060.png';
+                else if (pointValue >= 40.0) imageName = 'Left_Damper_0050.png';
+                else if (pointValue >= 30.0) imageName = 'Left_Damper_0040.png';
+                else if (pointValue >= 20.0) imageName = 'Left_Damper_0030.png';
+                else if (pointValue >= 10.0) imageName = 'Left_Damper_0020.png';
+                else if (pointValue > 0) imageName = 'Left_Damper_0010.png';
+                else imageName = 'Left_Damper_0000.png';
+                damperImg.src = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Left_Dampers/' + imageName;
+                console.log(`OA Damper image updated: ${imageName} (${Math.round(pointValue)}%)`);
+            }
+        }
+
+        function updateRaDamperGraphic(pointValue) {
+            const damperImg = document.getElementById('img-ra-damper');
+            if (damperImg) {
+                let imageName;
+                let imagePath;
+                
+                // RA damper mapping from XML - exact inverse logic
+                if (pointValue >= 100.0) {
+                    imageName = 'Left_Damper_0000.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 90.0) {
+                    imageName = 'Left_Damper_0010.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 80.0) {
+                    imageName = 'Left_Damper_0020.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 70.0) {
+                    imageName = 'Left_Damper_0030.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 60.0) {
+                    imageName = 'Right_Damper_0040.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 50.0) {
+                    imageName = 'Right_Damper_0050.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 40.0) {
+                    imageName = 'Right_Damper_0060.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 30.0) {
+                    imageName = 'Right_Damper_0070.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 20.0) {
+                    imageName = 'Right_Damper_0080.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else if (pointValue >= 10.0) {
+                    imageName = 'Right_Damper_0090.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                } else {
+                    imageName = 'Right_Damper_0100.png';
+                    imagePath = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/Right_Dampers/';
+                }
+                
+                damperImg.src = imagePath + imageName;
+                console.log(`RA Damper image updated: ${imageName} (OA: ${Math.round(pointValue)}%)`);
+            }
+        }
+
+        function updateChwCoilGraphic(pointValue) {
+            const coilImg = document.getElementById('img-chw-coil');
+            if (coilImg) {
+                let imageName;
+                if (pointValue >= 90.0) imageName = 'Cool_ON_0100.png';
+                else if (pointValue >= 80.0) imageName = 'Cool_ON_0090.png';
+                else if (pointValue >= 70.0) imageName = 'Cool_ON_0080.png';
+                else if (pointValue >= 60.0) imageName = 'Cool_ON_0070.png';
+                else if (pointValue >= 50.0) imageName = 'Cool_ON_0060.png';
+                else if (pointValue >= 40.0) imageName = 'Cool_ON_0050.png';
+                else if (pointValue >= 30.0) imageName = 'Cool_ON_0040.png';
+                else if (pointValue >= 20.0) imageName = 'Cool_ON_0030.png';
+                else if (pointValue >= 10.0) imageName = 'Cool_ON_0020.png';
+                else if (pointValue > 0) imageName = 'Cool_ON_0010.png';
+                else imageName = 'Cool_ON_0000.png';
+                coilImg.src = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/CHW_Coil/' + imageName;
+                console.log(`CHW Coil image updated: ${imageName} (${Math.round(pointValue)}%)`);
+            }
+        }
+
+        function updateHwCoilGraphic(pointValue) {
+            const coilImg = document.getElementById('img-hw-coil');
+            if (coilImg) {
+                let imageName;
+                if (pointValue >= 90.0) imageName = 'Heat_ON_0100.png';
+                else if (pointValue >= 80.0) imageName = 'Heat_ON_0090.png';
+                else if (pointValue >= 70.0) imageName = 'Heat_ON_0080.png';
+                else if (pointValue >= 60.0) imageName = 'Heat_ON_0070.png';
+                else if (pointValue >= 50.0) imageName = 'Heat_ON_0060.png';
+                else if (pointValue >= 40.0) imageName = 'Heat_ON_0050.png';
+                else if (pointValue >= 30.0) imageName = 'Heat_ON_0040.png';
+                else if (pointValue >= 20.0) imageName = 'Heat_ON_0030.png';
+                else if (pointValue >= 10.0) imageName = 'Heat_ON_0020.png';
+                else if (pointValue > 0) imageName = 'Heat_ON_0010.png';
+                else imageName = 'Heat_ON_0000.png';
+                coilImg.src = '/file/images/AHU/AHU_Type_2_OA_RA_Dampers/Large/HW_Coil/' + imageName;
+                console.log(`HW Coil image updated: ${imageName} (${Math.round(pointValue)}%)`);
+            }
+        }
+    </script>
+</body>
+</html>

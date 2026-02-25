@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<!-- @noSnoop -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Analytics Dashboard</title>
+    <script type='text/javascript' src='/requirejs/config.js'></script>
+    <script type='text/javascript' src='/module/js/com/tridium/js/ext/require/require.min.js'></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        :root {
+            /* Modern Energy Theme - Industrial Precision */
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --bg-quaternary: #222222;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-tertiary: #808080;
+            --accent-electric: #00ff88;
+            --accent-voltage-a: #ff3366;
+            --accent-voltage-b: #3366ff;
+            --accent-voltage-c: #ffaa00;
+            --accent-demand: #00ccff;
+            --accent-usage: #ff6b35;
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --shadow-glow: 0 0 40px rgba(0, 255, 136, 0.15);
+            --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --gradient-electric: linear-gradient(135deg, #00ff88, #00cc6a);
+            --gradient-voltage: linear-gradient(135deg, #ff3366, #cc1a44);
+            --gradient-demand: linear-gradient(135deg, #00ccff, #0099cc);
+        }
+
+        body.light-mode {
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f5;
+            --bg-quaternary: #eeeeee;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --text-tertiary: #888888;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --shadow-glow: 0 0 40px rgba(0, 255, 136, 0.1);
+            --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Animated Background Grid */
+        .energy-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .energy-grid svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .grid-line {
+            stroke: var(--accent-electric);
+            stroke-width: 0.5;
+            opacity: 0.3;
+            animation: energyPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes energyPulse {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Main Layout */
+        .dashboard-container {
+            position: relative;
+            z-index: 1;
+            padding: 40px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            background: var(--gradient-electric);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+            text-shadow: var(--shadow-glow);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 32px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle::before {
+            content: '';
+            width: 24px;
+            height: 24px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-heavy);
+        }
+
+        body.light-mode .theme-toggle::before {
+            transform: translateX(28px);
+            content: '';
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            position: absolute;
+            left: 9px;
+            top: 9px;
+            width: 14px;
+            height: 14px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .theme-toggle .icon-sun {
+            color: #F57F17;
+            opacity: 0;
+        }
+        .theme-toggle .icon-moon {
+            color: #90CAF9;
+            opacity: 1;
+        }
+        body.light-mode .theme-toggle .icon-sun { opacity: 1; transform: translateX(28px); }
+        body.light-mode .theme-toggle .icon-moon { opacity: 0; transform: translateX(28px); }
+
+
+        /* Navigation Back Button */
+        .nav-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 20px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .nav-back:hover {
+            background: var(--accent-electric);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+
+        /* Energy Metrics Grid */
+        .energy-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+
+        .energy-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-heavy);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .energy-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-electric);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .energy-card:hover::before {
+            opacity: 1;
+        }
+
+        .energy-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-glow), var(--shadow-heavy);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: var(--gradient-electric);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .card-value {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 2.8rem;
+            font-weight: 600;
+            text-align: center;
+            margin: 20px 0;
+            background: var(--gradient-electric);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* Gauge Styles */
+        .gauge-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 24px 0;
+            height: 200px;
+        }
+
+        .gauge-svg {
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3));
+        }
+
+        /* Phase-specific styles */
+        .voltage-a {
+            --card-accent: var(--accent-voltage-a);
+            --card-gradient: linear-gradient(135deg, #ff3366, #cc1a44);
+        }
+
+        .voltage-b {
+            --card-accent: var(--accent-voltage-b);
+            --card-gradient: linear-gradient(135deg, #3366ff, #1a44cc);
+        }
+
+        .voltage-c {
+            --card-accent: var(--accent-voltage-c);
+            --card-gradient: linear-gradient(135deg, #ffaa00, #cc8800);
+        }
+
+        .demand {
+            --card-accent: var(--accent-demand);
+            --card-gradient: linear-gradient(135deg, #00ccff, #0099cc);
+        }
+
+        .usage {
+            --card-accent: var(--accent-usage);
+            --card-gradient: linear-gradient(135deg, #ff6b35, #cc4420);
+        }
+
+        .voltage-a .card-icon,
+        .voltage-b .card-icon,
+        .voltage-c .card-icon,
+        .demand .card-icon,
+        .usage .card-icon {
+            background: var(--card-gradient);
+        }
+
+        .voltage-a .card-value,
+        .voltage-b .card-value,
+        .voltage-c .card-value,
+        .demand .card-value,
+        .usage .card-value {
+            background: var(--card-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Status Panel */
+        .status-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-heavy);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 20px;
+            border-radius: 16px;
+            background: var(--bg-tertiary);
+            transition: all 0.3s ease;
+        }
+
+        .status-item:hover {
+            background: var(--bg-quaternary);
+            transform: translateY(-2px);
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-value {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent-electric);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .energy-grid-container {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .energy-grid-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .energy-card {
+                padding: 24px;
+            }
+
+            .status-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            opacity: 0.6;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background Grid -->
+    <div class="energy-grid">
+        <svg>
+            <defs>
+                <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                    <path d="M 50 0 L 0 0 0 50" fill="none" class="grid-line" />
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <a href="javascript:history.back()" class="nav-back">← Back</a>
+            <button class="theme-toggle" id="themeToggle"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"/></svg></button>
+            <h1>Energy Analytics</h1>
+            <p>Real-time electrical system monitoring and analysis</p>
+        </div>
+
+        <!-- Energy Metrics Grid -->
+        <div class="energy-grid-container">
+            <!-- Voltage Phase A -->
+            <div class="energy-card voltage-a">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M7,2V13H10V22L17,10H13L17,2H7Z"/></svg></div>
+                        Voltage Phase A
+                    </div>
+                </div>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" id="voltageAGauge" width="200" height="200"></svg>
+                </div>
+                <div class="card-value" id="voltageAValue">-- V</div>
+                <div class="card-subtitle">Line-to-Neutral Voltage</div>
+            </div>
+
+            <!-- Voltage Phase B -->
+            <div class="energy-card voltage-b">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M7,2V13H10V22L17,10H13L17,2H7Z"/></svg></div>
+                        Voltage Phase B
+                    </div>
+                </div>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" id="voltageBGauge" width="200" height="200"></svg>
+                </div>
+                <div class="card-value" id="voltageBValue">-- V</div>
+                <div class="card-subtitle">Line-to-Neutral Voltage</div>
+            </div>
+
+            <!-- Voltage Phase C -->
+            <div class="energy-card voltage-c">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M7,2V13H10V22L17,10H13L17,2H7Z"/></svg></div>
+                        Voltage Phase C
+                    </div>
+                </div>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" id="voltageCGauge" width="200" height="200"></svg>
+                </div>
+                <div class="card-value" id="voltageCValue">-- V</div>
+                <div class="card-subtitle">Line-to-Neutral Voltage</div>
+            </div>
+
+            <!-- Power Demand -->
+            <div class="energy-card demand">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z"/></svg></div>
+                        Power Demand
+                    </div>
+                </div>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" id="demandGauge" width="200" height="200"></svg>
+                </div>
+                <div class="card-value" id="demandValue">-- kW</div>
+                <div class="card-subtitle">Current Load</div>
+            </div>
+
+            <!-- Energy Usage -->
+            <div class="energy-card usage">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon"><svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div>
+                        Energy Usage
+                    </div>
+                </div>
+                <div class="card-value" id="usageValue">-- kWh</div>
+                <div class="card-subtitle">Total Consumption</div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">Daily Usage</div>
+                    <div style="height: 60px;">
+                        <svg id="usageChart" width="100%" height="60"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status Panel -->
+        <div class="status-panel">
+            <div class="status-item">
+                <div class="status-label">System Status</div>
+                <div class="status-value" id="systemStatus">Initializing...</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Power Factor</div>
+                <div class="status-value" id="powerFactor">--</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Frequency</div>
+                <div class="status-value" id="frequency">-- Hz</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Last Update</div>
+                <div class="status-value" id="lastUpdate">--</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Management
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light-mode') {
+            body.classList.add('light-mode');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+            const currentTheme = body.classList.contains('light-mode') ? 'light-mode' : 'dark-mode';
+            localStorage.setItem('theme', currentTheme);
+        });
+
+        require(['baja!', 'd3'], function (baja, d3) {
+            'use strict';
+
+            // Configuration
+            const config = {
+                points: {
+                    demand: 'station:|slot:/PowerMeter/Demand',
+                    usage: 'station:|slot:/PowerMeter/Usage',
+                    voltageA: 'station:|slot:/PowerMeter/Volts_A',
+                    voltageB: 'station:|slot:/PowerMeter/Volts_B',
+                    voltageC: 'station:|slot:/PowerMeter/Volts_C'
+                },
+                ranges: {
+                    voltage: { min: 400, max: 500 },
+                    demand: { min: 0, max: 150 }
+                }
+            };
+
+            // Current values
+            const currentValues = {
+                demand: 0,
+                usage: 0,
+                voltageA: 0,
+                voltageB: 0,
+                voltageC: 0
+            };
+
+            // D3.js Circular Gauge Class
+            class CircularGauge {
+                constructor(svgSelector, options) {
+                    this.svgSelector = svgSelector;
+                    this.svg = d3.select(svgSelector);
+                    this.options = {
+                        minValue: 0,
+                        maxValue: 100,
+                        value: 0,
+                        size: 180,
+                        strokeWidth: 20,
+                        colors: {
+                            track: 'rgba(255, 255, 255, 0.1)',
+                            fill: '#00ff88'
+                        },
+                        ...options
+                    };
+                    
+                    this.currentValue = this.options.minValue;
+                    this.init();
+                }
+
+                init() {
+                    const { size, strokeWidth } = this.options;
+                    const radius = (size - strokeWidth) / 2;
+                    const center = size / 2;
+                    
+                    // Create unique gradient ID from selector
+                    const gradientId = `gradient-${this.svgSelector.replace('#', '').replace(/[^a-zA-Z0-9]/g, '')}`;
+
+                    // Clear ALL previous content completely
+                    this.svg.selectAll('*').remove();
+                    this.svg.html(''); // Extra cleaning
+
+                    // Set up SVG viewBox
+                    this.svg.attr('viewBox', `0 0 ${size} ${size}`);
+
+                    // Create main group
+                    this.g = this.svg.append('g')
+                        .attr('transform', `translate(${center}, ${center})`);
+
+                    // Create gradient definitions
+                    const defs = this.svg.append('defs');
+                    
+                    const gradient = defs.append('linearGradient')
+                        .attr('id', gradientId)
+                        .attr('gradientUnits', 'userSpaceOnUse')
+                        .attr('x1', -radius).attr('y1', -radius)
+                        .attr('x2', radius).attr('y2', radius);
+                    
+                    gradient.append('stop')
+                        .attr('offset', '0%')
+                        .attr('stop-color', this.options.colors.fill)
+                        .attr('stop-opacity', 1);
+                    
+                    gradient.append('stop')
+                        .attr('offset', '100%')
+                        .attr('stop-color', this.options.colors.fill)
+                        .attr('stop-opacity', 0.6);
+
+                    // Define the arc generator
+                    const startAngleDeg = 210;
+                    const endAngleDeg = 510;
+                    
+                    const startAngle = (startAngleDeg * Math.PI) / 180;
+                    const endAngle = (endAngleDeg * Math.PI) / 180;
+
+                    this.arc = d3.arc()
+                        .innerRadius(radius - strokeWidth)
+                        .outerRadius(radius)
+                        .startAngle(startAngle)
+                        .cornerRadius(12);
+
+                    // Background arc only
+                    this.g.append('path')
+                        .datum({ endAngle: endAngle })
+                        .attr('d', this.arc)
+                        .attr('fill', this.options.colors.track)
+                        .attr('stroke', 'none');
+
+                    // Progress arc only
+                    this.progressArc = this.g.append('path')
+                        .attr('fill', this.options.colors.fill)
+                        .attr('stroke', 'none')
+                        .style('filter', 'drop-shadow(0 0 8px rgba(0, 255, 136, 0.6))');
+
+                    // ONLY the center value text - NO other text elements
+                    this.valueText = this.g.append('text')
+                        .attr('x', 0)
+                        .attr('y', 10)
+                        .attr('text-anchor', 'middle')
+                        .attr('dominant-baseline', 'central')
+                        .style('font-family', 'JetBrains Mono, monospace')
+                        .style('font-size', '24px')
+                        .style('font-weight', '600')
+                        .style('fill', this.options.colors.fill);
+
+                    this.render();
+                }
+
+                setValue(value) {
+                    const clampedValue = Math.max(this.options.minValue, 
+                        Math.min(this.options.maxValue, value));
+                    
+                    // Animate to new value
+                    d3.select({})
+                        .transition()
+                        .duration(800)
+                        .ease(d3.easeCubicInOut)
+                        .tween('value', () => {
+                            const interpolate = d3.interpolateNumber(this.currentValue, clampedValue);
+                            return (t) => {
+                                this.currentValue = interpolate(t);
+                                this.render();
+                            };
+                        });
+                }
+
+                render() {
+                    const { minValue, maxValue } = this.options;
+                    
+                    // Calculate progress ratio
+                    let ratio = (this.currentValue - minValue) / (maxValue - minValue);
+                    ratio = Math.max(0, Math.min(1, ratio));
+                    
+                    // Calculate end angle based on progress - like your working gauge
+                    const startAngleDeg = 210;
+                    const endAngleDeg = 510;
+                    const startAngle = (startAngleDeg * Math.PI) / 180;
+                    const totalAngleRange = ((endAngleDeg - startAngleDeg) * Math.PI) / 180;
+                    
+                    const currentEndAngle = startAngle + (ratio * totalAngleRange);
+                    
+                    // Update the progress arc using the same pattern as your working gauge
+                    this.progressArc
+                        .datum({ endAngle: currentEndAngle })
+                        .attr('d', this.arc);
+                    
+                    // Update value text
+                    this.valueText.text(Math.round(this.currentValue));
+                }
+            }
+
+            // Initialize gauges
+            const gauges = {
+                voltageA: new CircularGauge('#voltageAGauge', {
+                    minValue: config.ranges.voltage.min,
+                    maxValue: config.ranges.voltage.max,
+                    colors: { fill: '#ff3366' }
+                }),
+                voltageB: new CircularGauge('#voltageBGauge', {
+                    minValue: config.ranges.voltage.min,
+                    maxValue: config.ranges.voltage.max,
+                    colors: { fill: '#3366ff' }
+                }),
+                voltageC: new CircularGauge('#voltageCGauge', {
+                    minValue: config.ranges.voltage.min,
+                    maxValue: config.ranges.voltage.max,
+                    colors: { fill: '#ffaa00' }
+                }),
+                demand: new CircularGauge('#demandGauge', {
+                    minValue: config.ranges.demand.min,
+                    maxValue: config.ranges.demand.max,
+                    colors: { fill: '#00ccff' }
+                })
+            };
+
+            // Usage chart setup
+            function createUsageChart() {
+                const svg = d3.select('#usageChart');
+                const margin = { top: 5, right: 5, bottom: 5, left: 5 };
+                const width = 280 - margin.left - margin.right;
+                const height = 50 - margin.top - margin.bottom;
+
+                // Sample data for demo
+                const data = Array.from({ length: 24 }, (_, i) => ({
+                    hour: i,
+                    usage: Math.random() * 50 + 20 + Math.sin(i * Math.PI / 12) * 15
+                }));
+
+                const x = d3.scaleLinear()
+                    .domain([0, 23])
+                    .range([0, width]);
+
+                const y = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d.usage)])
+                    .range([height, 0]);
+
+                const line = d3.line()
+                    .x(d => x(d.hour))
+                    .y(d => y(d.usage))
+                    .curve(d3.curveCardinal);
+
+                const g = svg.append('g')
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+                // Create gradient for area
+                const gradient = svg.append('defs')
+                    .append('linearGradient')
+                    .attr('id', 'usageGradient')
+                    .attr('gradientUnits', 'userSpaceOnUse')
+                    .attr('x1', 0).attr('y1', 0)
+                    .attr('x2', 0).attr('y2', height);
+
+                gradient.append('stop')
+                    .attr('offset', '0%')
+                    .attr('stop-color', '#ff6b35')
+                    .attr('stop-opacity', 0.8);
+
+                gradient.append('stop')
+                    .attr('offset', '100%')
+                    .attr('stop-color', '#ff6b35')
+                    .attr('stop-opacity', 0.1);
+
+                // Area
+                const area = d3.area()
+                    .x(d => x(d.hour))
+                    .y0(height)
+                    .y1(d => y(d.usage))
+                    .curve(d3.curveCardinal);
+
+                g.append('path')
+                    .datum(data)
+                    .attr('fill', 'url(#usageGradient)')
+                    .attr('d', area);
+
+                // Line
+                g.append('path')
+                    .datum(data)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#ff6b35')
+                    .attr('stroke-width', 2)
+                    .attr('d', line);
+            }
+
+            // Update functions
+            function updateDemand(value) {
+                currentValues.demand = value;
+                gauges.demand.setValue(value);
+                document.getElementById('demandValue').textContent = value.toFixed(1) + ' kW';
+            }
+
+            function updateUsage(value) {
+                currentValues.usage = value;
+                document.getElementById('usageValue').textContent = 
+                    value.toLocaleString('en-US', { maximumFractionDigits: 1 }) + ' kWh';
+            }
+
+            function updateVoltageA(value) {
+                currentValues.voltageA = value;
+                gauges.voltageA.setValue(value);
+                document.getElementById('voltageAValue').textContent = value.toFixed(0) + ' V';
+            }
+
+            function updateVoltageB(value) {
+                currentValues.voltageB = value;
+                gauges.voltageB.setValue(value);
+                document.getElementById('voltageBValue').textContent = value.toFixed(0) + ' V';
+            }
+
+            function updateVoltageC(value) {
+                currentValues.voltageC = value;
+                gauges.voltageC.setValue(value);
+                document.getElementById('voltageCValue').textContent = value.toFixed(0) + ' V';
+            }
+
+            function updateSystemStatus() {
+                const voltages = [currentValues.voltageA, currentValues.voltageB, currentValues.voltageC];
+                const avgVoltage = voltages.reduce((a, b) => a + b, 0) / voltages.length;
+                const minVoltage = Math.min(...voltages.filter(v => v > 0));
+                const maxVoltage = Math.max(...voltages);
+                
+                let status = 'Normal';
+                if (minVoltage < 420 || maxVoltage > 480) {
+                    status = 'Warning';
+                } else if (minVoltage < 440 || maxVoltage > 470) {
+                    status = 'Caution';
+                }
+                
+                document.getElementById('systemStatus').textContent = status;
+                
+                // Calculate power factor (demo calculation)
+                const powerFactor = (0.85 + Math.random() * 0.1).toFixed(2);
+                document.getElementById('powerFactor').textContent = powerFactor;
+                
+                // Frequency (typically 60 Hz)
+                const frequency = (59.9 + Math.random() * 0.2).toFixed(1);
+                document.getElementById('frequency').textContent = frequency + ' Hz';
+                
+                // Last update time
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent = 
+                    now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // Baja connection setup - using working pattern from AHU graphic
+            const subscriber = new baja.Subscriber();
+
+            function connectToPoints() {
+                console.log('Connecting to PowerMeter points...');
+                
+                const pointMappings = [
+                    { ord: config.points.demand, update: updateDemand, name: 'Demand' },
+                    { ord: config.points.usage, update: updateUsage, name: 'Usage' },
+                    { ord: config.points.voltageA, update: updateVoltageA, name: 'Voltage A' },
+                    { ord: config.points.voltageB, update: updateVoltageB, name: 'Voltage B' },
+                    { ord: config.points.voltageC, update: updateVoltageC, name: 'Voltage C' }
+                ];
+
+                let connectedCount = 0;
+
+                pointMappings.forEach((mapping, index) => {
+                    if (mapping.ord && mapping.ord.trim() !== '') {
+                        console.log(`Attempting to connect to ${mapping.name}: ${mapping.ord}`);
+                        
+                        baja.Ord.make(mapping.ord).get({ subscriber: subscriber })
+                            .then(point => {
+                                connectedCount++;
+                                console.log(`✅ Connected to ${mapping.name} (${connectedCount}/${pointMappings.length})`);
+                                
+                                // Function to update from point - like AHU pattern
+                                const updateFromPoint = (point) => {
+                                    try {
+                                        const valueDisplay = point.getOut().getValueDisplay();
+                                        const numericValue = parseFloat(valueDisplay);
+                                        
+                                        console.log(`${mapping.name} value: ${valueDisplay} (numeric: ${numericValue})`);
+                                        
+                                        if (!isNaN(numericValue)) {
+                                            mapping.update(numericValue);
+                                            updateSystemStatus();
+                                        }
+                                    } catch (error) {
+                                        console.error(`Error reading ${mapping.name}:`, error);
+                                    }
+                                };
+
+                                // Initial value update - exactly like AHU pattern
+                                updateFromPoint(point);
+
+                                // Subscribe to changes - exactly like AHU pattern
+                                subscriber.attach('changed', function(prop) {
+                                    if (prop.getName() === 'out' && this === point) {
+                                        updateFromPoint(this);
+                                    }
+                                });
+
+                                // Update system status once all points are connected
+                                if (connectedCount === pointMappings.length) {
+                                    document.getElementById('systemStatus').textContent = 'Online';
+                                }
+                            })
+                            .catch(error => {
+                                console.error(`<svg style="width:1em;height:1em;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/></svg> Error connecting to ${mapping.name} (${mapping.ord}):`, error);
+                                document.getElementById('systemStatus').textContent = `Error: ${mapping.name}`;
+                            });
+                    } else {
+                        console.warn(`Empty ORD for ${mapping.name}`);
+                    }
+                });
+
+                // Timeout check for connection status
+                setTimeout(() => {
+                    if (connectedCount === 0) {
+                        console.warn('No points connected after 10 seconds - showing demo data');
+                        document.getElementById('systemStatus').textContent = 'Demo Mode';
+                        showDemoData();
+                    }
+                }, 10000);
+            }
+
+            // Demo data function
+            function showDemoData() {
+                console.log('Loading demo data...');
+                updateDemand(87.5);
+                updateUsage(12450.8);
+                updateVoltageA(445.2);
+                updateVoltageB(447.1);
+                updateVoltageC(446.8);
+                updateSystemStatus();
+            }
+
+            // Initialize dashboard
+            function initializeDashboard() {
+                console.log('Initializing Energy Dashboard...');
+                
+                // Create usage chart
+                createUsageChart();
+                
+                // Set initial status
+                document.getElementById('systemStatus').textContent = 'Connecting...';
+                
+                // Add loading classes
+                document.querySelectorAll('.energy-card').forEach(card => {
+                    card.classList.add('loading');
+                });
+
+                // Connect to Niagara points
+                connectToPoints();
+
+                // Remove loading state after connection attempt
+                setTimeout(() => {
+                    document.querySelectorAll('.energy-card').forEach(card => {
+                        card.classList.remove('loading');
+                    });
+                }, 3000);
+            }
+
+            // Start the dashboard
+            initializeDashboard();
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+                if (subscriber) {
+                    subscriber.unsubscribeAll();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
